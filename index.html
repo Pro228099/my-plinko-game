@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Plinko Game</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #18222d;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    #score-board {
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    canvas {
+      background: #10171e;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      touch-action: none;
+    }
+    .hint {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #8e9ca8;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="score-board">Счет: <span id="score">100</span></div>
+  <canvas id="gameCanvas" width="360" height="520"></canvas>
+  <div class="hint">Нажми на верхнюю область, чтобы сбросить шарик</div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+
+    let score = 100;
+
+    // Настройки сетки и физики
+    const ROWS = 7;
+    const PEG_RADIUS = 4;
+    const BALL_RADIUS = 7;
+    const GRAVITY = 0.25;
+    const RESTITUTION = 0.5; // Прыгучесть
+
+    // Ячейки снизу и их коэффициенты
+    const MULTIPLIERS = [1, 3, 5, 10, 5, 3, 1];
+    const COLORS = ['#4caf50', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#4caf50'];
+
+    // Генерация штырьков
+    const pegs = [];
+    const startY = 80;
+    const rowSpacing = 45;
+    const colSpacing = 38;
+
+    for (let r = 0; r < ROWS; r++) {
+      const count = r + 3;
+      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (let c = 0; c < count; c++) {
+        pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
+      }
+    }
+
+    // Шарики в игре
+    const balls = [];
+
+    // Сброс шарика
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Спавним только в верхней трети
+      if (clickY < 60 && score >= 10) {
+        score -= 10;
+        scoreEl.innerText = score;
+        balls.push({
+          x: clickX,
+          y: Math.max(20, clickY),
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: 0
+        });
+      }
+    });
+
+    // Расчет попадания в ячейки
+    function getSlotIndex(x) {
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      let idx = Math.floor(x / slotWidth);
+      return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
+    }
+
+    // Игровой цикл
+    function update() {
+      // Обновление шариков
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const b = balls[i];
+        b.vy += GRAVITY;
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // Ограничение по границам экрана
+        if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
+        if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
+
+        // Столкновение со штырьками
+        pegs.forEach(p => {
+          const dx = b.x - p.x;
+          const dy = b.y - p.y;
+          const dist = Math.hypot(dx, dy);
+          const minDist = BALL_RADIUS + PEG_RADIUS;
+
+          if (dist < minDist) {
+            const angle = Math.atan2(dy, dx);
+            const overlap = minDist - dist;
+            b.x += Math.cos(angle) * overlap;
+            b.y += Math.sin(angle) * overlap;
+
+            // Вычисление отскока
+            const speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
+            b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
+            b.vy = Math.sin(angle) * speed;
+          }
+        });
+
+        // Достижение дна
+        if (b.y + BALL_RADIUS >= canvas.height - 40) {
+          const slotIdx = getSlotIndex(b.x);
+          const mult = MULTIPLIERS[slotIdx];
+          score += 10 * mult;
+          scoreEl.innerText = score;
+          balls.splice(i, 1);
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Отрисовка штырьков
+      ctx.fillStyle = '#ffffff';
+      pegs.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Отрисовка ячеек снизу
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      MULTIPLIERS.forEach((m, i) => {
+        const x = i * slotWidth;
+        const y = canvas.height - 40;
+        ctx.fillStyle = COLORS[i];
+        ctx.fillRect(x + 2, y, slotWidth - 4, 38);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
+      });
+
+      // Отрисовка шариков
+      ctx.fillStyle = '#ffeb3b';
+      balls.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
