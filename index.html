@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -251,13 +250,17 @@
         ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
       });
 
-      // Отрисовка шариков
-      ctx.fillStyle = '#ffeb3b';
+      // Отрисовка шариков с неоновым свечением
+      ctx.save();
+      ctx.fillStyle = '#fffb00';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#fffb00';
       balls.forEach(b => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       });
+      ctx.restore();
     }
 
     function loop() {
@@ -270,5 +273,3 @@
   </script>
 </body>
 </html>
-
-```
