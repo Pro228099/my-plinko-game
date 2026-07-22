@@ -1,9 +1,13 @@
+import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from dotenv import load_dotenv
 
-# Замени на свой токен от @BotFather и ссылку на GitHub Pages
-BOT_TOKEN = "ТВОЙ_ТОКЕН_ОТ_BOTFATHER"
-WEB_APP_URL = "https://твой-логин.github.io/my-plinko-game/"
+# Загружаем переменные из файла .env
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEB_APP_URL = os.getenv("WEB_APP_URL")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -11,7 +15,6 @@ bot = telebot.TeleBot(BOT_TOKEN)
 def send_welcome(message):
     markup = InlineKeyboardMarkup()
     
-    # Кнопка для открытия WebApp с игрой
     play_button = InlineKeyboardButton(
         text="Играть в Plinko 🎲", 
         web_app=WebAppInfo(url=WEB_APP_URL)
