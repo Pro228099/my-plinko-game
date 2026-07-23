@@ -7,8 +7,6 @@ import telebot
 from telebot.types import (
     InlineKeyboardMarkup, 
     InlineKeyboardButton, 
-    ReplyKeyboardMarkup, 
-    KeyboardButton, 
     WebAppInfo
 )
 from dotenv import load_dotenv
@@ -47,7 +45,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 # --- КОМАНДА /start И /help ---
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    # 1. Инлайн кнопка в сообщении
+    # Единственная инлайн-кнопка под сообщением
     inline_markup = InlineKeyboardMarkup()
     inline_markup.add(
         InlineKeyboardButton(
@@ -56,25 +54,10 @@ def send_welcome(message):
         )
     )
     
-    # 2. Кнопка на клавиатуре (нужна для работы tg.sendData)
-    reply_markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    reply_markup.add(
-        KeyboardButton(
-            text="🎮 Открыть Plinko", 
-            web_app=WebAppInfo(url=WEB_APP_URL)
-        )
-    )
-    
     bot.reply_to(
         message, 
         "Привет! Нажми на кнопку ниже, чтобы запустить игру прямо в Telegram:", 
         reply_markup=inline_markup
-    )
-    
-    bot.send_message(
-        message.chat.id,
-        "Также кнопка запуска продублирована на вашей клавиатуре 👇",
-        reply_markup=reply_markup
     )
 
 # --- ОБРАБОТКА ДАННЫХ ИЗ WEBAPP ---
@@ -88,7 +71,7 @@ def handle_web_app_data(message):
             username = f"@{user.username}" if user.username else user.first_name
             feedback_raw = data.get("text", "")
             
-            # Экранируем спецсимволы, чтобы Telegram HTML parser не упал
+            # Экранируем спецсимволы для безопасной отправки HTML
             safe_username = html.escape(username)
             safe_text = html.escape(feedback_raw)
 
