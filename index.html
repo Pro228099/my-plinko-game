@@ -4,7 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Plinko Game</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- 1. ИЗОЛИРОВАННЫЙ УЛОВИТЕЛЬ ОШИБОК (Запускается первым) -->
+  <script>
+    window.onerror = function(msg, url, lineNo, colNo, error) {
+      var errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.95);color:#fff;padding:12px;font-size:12px;z-index:999999;word-break:break-all;font-family:monospace;';
+      errDiv.innerText = '⚠️ Ошибка JS (Стр ' + lineNo + '): ' + msg;
+      if (document.body) {
+        document.body.appendChild(errDiv);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(errDiv); });
+      }
+      return false;
+    };
+  </script>
+
+  <!-- 2. ВНЕШНИЙ СКРИПТ С АТРИБУТОМ DEFER (Не блокирует страницу) -->
+  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -312,7 +330,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.14</div>
+  <div class="app-version">v1.0.15</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -390,131 +408,110 @@
     </div>
   </div>
 
+  <!-- ОСНОВНОЙ СКРИПТ ИГРЫ -->
   <script>
-    // 0. ЭКРАННЫЙ УЛОВИТЕЛЬ ОШИБОК
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-      const errDiv = document.createElement('div');
-      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.95);color:#fff;padding:12px;font-size:12px;z-index:99999;word-break:break-all;font-family:monospace;';
-      errDiv.innerText = '⚠️ Ошибка JS (Стр ' + lineNo + '): ' + msg;
-      document.body.appendChild(errDiv);
-      return false;
-    };
-
-    // БЕЗОПАСНАЯ РАБОТА С ХРАНИЛИЩЕМ
-    const safeStorage = {
-      getItem: (key) => {
+    // БЕЗОПАСНОЕ ХРАНИЛИЩЕ
+    var safeStorage = {
+      getItem: function(key) {
         try { return localStorage.getItem(key); } catch (e) { return null; }
       },
-      setItem: (key, value) => {
+      setItem: function(key, value) {
         try { localStorage.setItem(key, value); } catch (e) {}
       }
     };
 
-    // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
-    let tg = null;
-    try {
-      if (window.Telegram && window.Telegram.WebApp) {
-        tg = window.Telegram.WebApp;
-        if (tg.ready) tg.ready();
-        if (tg.expand) tg.expand();
-      }
-    } catch (e) {
-      console.warn('Telegram WebApp init bypass:', e);
-    }
-
     // 1. DOM ЭЛЕМЕНТЫ
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
+    var canvas = document.getElementById('gameCanvas');
+    var ctx = canvas.getContext('2d');
+    var scoreEl = document.getElementById('score');
 
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettings = document.getElementById('close-settings');
-    const openConfirmReset = document.getElementById('open-confirm-reset');
+    var settingsBtn = document.getElementById('settings-btn');
+    var settingsModal = document.getElementById('settings-modal');
+    var closeSettings = document.getElementById('close-settings');
+    var openConfirmReset = document.getElementById('open-confirm-reset');
 
-    const menuTabBtn = document.getElementById('menu-tab-btn');
-    const menuModal = document.getElementById('menu-modal');
-    const closeMenu = document.getElementById('close-menu');
+    var menuTabBtn = document.getElementById('menu-tab-btn');
+    var menuModal = document.getElementById('menu-modal');
+    var closeMenu = document.getElementById('close-menu');
 
-    const openFeedbackBtn = document.getElementById('open-feedback-btn');
-    const feedbackModal = document.getElementById('feedback-modal');
-    const closeFeedback = document.getElementById('close-feedback');
-    const sendFeedbackBtn = document.getElementById('send-feedback-btn');
-    const feedbackText = document.getElementById('feedback-text');
+    var openFeedbackBtn = document.getElementById('open-feedback-btn');
+    var feedbackModal = document.getElementById('feedback-modal');
+    var closeFeedback = document.getElementById('close-feedback');
+    var sendFeedbackBtn = document.getElementById('send-feedback-btn');
+    var feedbackText = document.getElementById('feedback-text');
 
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmYes = document.getElementById('confirm-yes');
-    const confirmNo = document.getElementById('confirm-no');
+    var confirmModal = document.getElementById('confirm-modal');
+    var confirmYes = document.getElementById('confirm-yes');
+    var confirmNo = document.getElementById('confirm-no');
 
-    const resetModal = document.getElementById('reset-modal');
-    const resetBtn = document.getElementById('reset-btn');
+    var resetModal = document.getElementById('reset-modal');
+    var resetBtn = document.getElementById('reset-btn');
 
-    const themeDarkBtn = document.getElementById('theme-dark-btn');
-    const themeLightBtn = document.getElementById('theme-light-btn');
+    var themeDarkBtn = document.getElementById('theme-dark-btn');
+    var themeLightBtn = document.getElementById('theme-light-btn');
 
     // 2. СОСТОЯНИЕ И КОНСТАНТЫ ФИЗИКИ
-    let score = 100;
-    let saveTimeout = null;
-    let currentTheme = safeStorage.getItem('plinko_theme') || 'dark';
+    var score = 100;
+    var saveTimeout = null;
+    var currentTheme = safeStorage.getItem('plinko_theme') || 'dark';
 
-    const ROWS = 7;
-    const PEG_RADIUS = 4;
-    const BALL_RADIUS = 7;
-    const GRAVITY = 0.25;
-    const RESTITUTION = 0.5;
+    var ROWS = 7;
+    var PEG_RADIUS = 4;
+    var BALL_RADIUS = 7;
+    var GRAVITY = 0.25;
+    var RESTITUTION = 0.5;
 
-    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
+    var MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
+    var COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
 
-    const pegs = [];
-    const balls = [];
+    var pegs = [];
+    var balls = [];
 
-    const startY = 80;
-    const rowSpacing = 45;
-    const colSpacing = 38;
+    var startY = 80;
+    var rowSpacing = 45;
+    var colSpacing = 38;
 
     // Генерируем колышки
-    for (let r = 0; r < ROWS; r++) {
-      const count = r + 3;
-      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
-      for (let c = 0; c < count; c++) {
+    for (var r = 0; r < ROWS; r++) {
+      var count = r + 3;
+      var startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (var c = 0; c < count; c++) {
         pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
       }
     }
 
     // 3. ФУНКЦИИ ИГРЫ
-    const applyTheme = (theme) => {
-      try {
-        currentTheme = theme;
-        safeStorage.setItem('plinko_theme', theme);
-        if (theme === 'light') {
-          document.body.classList.add('light-theme');
-          themeDarkBtn.classList.remove('active');
-          themeLightBtn.classList.add('active');
-        } else {
-          document.body.classList.remove('light-theme');
-          themeLightBtn.classList.remove('active');
-          themeDarkBtn.classList.add('active');
-        }
-      } catch(e) {}
-    };
+    function applyTheme(theme) {
+      currentTheme = theme;
+      safeStorage.setItem('plinko_theme', theme);
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        themeDarkBtn.classList.remove('active');
+        themeLightBtn.classList.add('active');
+      } else {
+        document.body.classList.remove('light-theme');
+        themeLightBtn.classList.remove('active');
+        themeDarkBtn.classList.add('active');
+      }
+    }
 
-    const checkGameOver = () => {
+    function checkGameOver() {
       if (score < 10 && balls.length === 0) {
         resetModal.style.display = 'flex';
       }
-    };
+    }
 
-    const loadScore = () => {
-      const localSaved = safeStorage.getItem('plinko_score');
+    function loadScore() {
+      var localSaved = safeStorage.getItem('plinko_score');
       if (localSaved !== null) {
         score = parseInt(localSaved, 10);
         scoreEl.innerText = score;
       }
 
       try {
+        var tg = window.Telegram && window.Telegram.WebApp;
         if (tg && tg.CloudStorage && typeof tg.CloudStorage.getItem === 'function') {
-          tg.CloudStorage.getItem('plinko_score', (err, value) => {
+          tg.CloudStorage.getItem('plinko_score', function(err, value) {
             if (!err && value) {
               score = parseInt(value, 10);
               scoreEl.innerText = score;
@@ -524,36 +521,36 @@
           });
           return;
         }
-      } catch (e) {
-        console.warn('CloudStorage fail:', e);
-      }
+      } catch (e) {}
       checkGameOver();
-    };
+    }
 
-    const forceSaveCloud = () => {
+    function forceSaveCloud() {
       try {
+        var tg = window.Telegram && window.Telegram.WebApp;
         if (tg && tg.CloudStorage && typeof tg.CloudStorage.setItem === 'function') {
-          tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {});
+          tg.CloudStorage.setItem('plinko_score', score.toString(), function(err) {});
         }
       } catch(e) {}
-    };
+    }
 
-    const saveScore = () => {
+    function saveScore() {
       safeStorage.setItem('plinko_score', score.toString());
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(forceSaveCloud, 500);
-    };
+    }
 
-    const sendFeedback = () => {
-      const text = feedbackText.value.trim();
+    function sendFeedback() {
+      var text = feedbackText.value.trim();
       if (!text) {
         alert("Пожалуйста, введите текст сообщения.");
         return;
       }
 
-      const payload = { type: 'feedback', text };
+      var payload = { type: 'feedback', text: text };
 
       try {
+        var tg = window.Telegram && window.Telegram.WebApp;
         if (tg && typeof tg.sendData === 'function') {
           tg.sendData(JSON.stringify(payload));
           feedbackModal.style.display = 'none';
@@ -561,34 +558,31 @@
           alert("Отзыв отправлен!");
           return;
         }
-      } catch (err) {
-        alert("Отправка доступна при запуске с клавиатуры Telegram!");
-        return;
-      }
-      alert("Отправка работает внутри открытого Telegram WebApp!");
-    };
+      } catch (err) {}
+      alert("Отправка доступна при запуске с клавиатуры Telegram!");
+    }
 
-    const getSlotIndex = (x) => {
-      const slotWidth = canvas.width / MULTIPLIERS.length;
-      const idx = Math.floor(x / slotWidth);
+    function getSlotIndex(x) {
+      var slotWidth = canvas.width / MULTIPLIERS.length;
+      var idx = Math.floor(x / slotWidth);
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
-    };
+    }
 
-    const showFloatingScore = (x, y, points, color) => {
-      const el = document.createElement('div');
+    function showFloatingScore(x, y, points, color) {
+      var el = document.createElement('div');
       el.className = 'floating-score';
-      el.innerText = `+${points}`;
+      el.innerText = '+' + points;
       el.style.color = color;
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
       document.body.appendChild(el);
 
-      setTimeout(() => el.remove(), 800);
-    };
+      setTimeout(function() { el.remove(); }, 800);
+    }
 
-    const update = () => {
-      for (let i = balls.length - 1; i >= 0; i--) {
-        const b = balls[i];
+    function update() {
+      for (var i = balls.length - 1; i >= 0; i--) {
+        var b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
@@ -596,37 +590,38 @@
         if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
         if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
-        pegs.forEach(p => {
-          const dx = b.x - p.x;
-          const dy = b.y - p.y;
-          const dist = Math.hypot(dx, dy);
-          const minDist = BALL_RADIUS + PEG_RADIUS;
+        for (var j = 0; j < pegs.length; j++) {
+          var p = pegs[j];
+          var dx = b.x - p.x;
+          var dy = b.y - p.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          var minDist = BALL_RADIUS + PEG_RADIUS;
 
           if (dist < minDist) {
-            const angle = Math.atan2(dy, dx);
-            const overlap = minDist - dist;
+            var angle = Math.atan2(dy, dx);
+            var overlap = minDist - dist;
             b.x += Math.cos(angle) * overlap;
             b.y += Math.sin(angle) * overlap;
 
-            const speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
+            var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy) * RESTITUTION;
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
-        });
+        }
 
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
-          const slotIdx = getSlotIndex(b.x);
-          const mult = MULTIPLIERS[slotIdx];
-          const gained = 10 * mult;
+          var slotIdx = getSlotIndex(b.x);
+          var mult = MULTIPLIERS[slotIdx];
+          var gained = 10 * mult;
 
           score += gained;
           scoreEl.innerText = score;
           saveScore();
 
-          const rect = canvas.getBoundingClientRect();
-          const slotWidth = canvas.width / MULTIPLIERS.length;
-          const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
-          const popupY = rect.top + (canvas.height - 40);
+          var rect = canvas.getBoundingClientRect();
+          var slotWidth = canvas.width / MULTIPLIERS.length;
+          var popupX = rect.left + (slotIdx + 0.5) * slotWidth;
+          var popupY = rect.top + (canvas.height - 40);
 
           showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
 
@@ -634,51 +629,52 @@
           checkGameOver();
         }
       }
-    };
+    }
 
-    const draw = () => {
+    function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
-      pegs.forEach(p => {
+      for (var i = 0; i < pegs.length; i++) {
+        var p = pegs[i];
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
 
-      const slotWidth = canvas.width / MULTIPLIERS.length;
-      MULTIPLIERS.forEach((m, i) => {
-        const x = i * slotWidth;
-        const y = canvas.height - 40;
-        ctx.fillStyle = COLORS[i];
+      var slotWidth = canvas.width / MULTIPLIERS.length;
+      for (var k = 0; k < MULTIPLIERS.length; k++) {
+        var m = MULTIPLIERS[k];
+        var x = k * slotWidth;
+        var y = canvas.height - 40;
+        ctx.fillStyle = COLORS[k];
         ctx.fillRect(x + 2, y, slotWidth - 4, 38);
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
-      });
+        ctx.fillText('x' + m, x + slotWidth / 2, y + 24);
+      }
 
       ctx.save();
       ctx.fillStyle = '#fffb00';
       ctx.shadowBlur = 12;
       ctx.shadowColor = '#fffb00';
-      balls.forEach(b => {
+      for (var bIdx = 0; bIdx < balls.length; bIdx++) {
+        var b = balls[bIdx];
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
       ctx.restore();
-    };
+    }
 
-    const loop = () => {
+    function loop() {
       update();
       draw();
       requestAnimationFrame(loop);
-    };
+    }
 
     // 4. ОБРАБОТЧИКИ СОБЫТИЙ
-    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
-    themeLightBtn.addEventListener('click', () => applyTheme('light'));
-
-    menuT
+    themeDarkBtn.addEventListener('click', function() { applyTheme('dark'); });
+    themeLightBt
