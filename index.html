@@ -146,29 +146,26 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* === СТРОГО ЧЁРНОЕ ОКНО С ТОНКОЙ НЕОНОВОЙ РАМКОЙ === */
-    .rainbow-modal {
-      position: relative;
-      background: #000000;
-      color: #ffffff;
-      padding: 24px 20px;
-      border-radius: 16px;
-      text-align: center;
-      max-width: 310px;
-      width: 88%;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
-      z-index: 1;
-    }
-    /* Тонкая рамка 2px во все стороны */
-    .rainbow-modal::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
+    /* === ЖЕЛЕЗОБЕТОННАЯ РАДУЖНАЯ РАМКА === */
+    .rainbow-border-wrapper {
+      padding: 2px; /* Ширина неоновой рамки */
       border-radius: 18px;
       background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #00ff00, #00afff, #7a00ff, #ff00c8, #ff0000);
       background-size: 400%;
-      z-index: -1;
       animation: rainbowGlow 8s linear infinite;
+      max-width: 310px;
+      width: 88%;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+    }
+
+    .black-modal-content {
+      position: relative;
+      background: #000000 !important;
+      color: #ffffff;
+      padding: 24px 20px;
+      border-radius: 16px; /* Чуть меньше радиуса внешнего контейнера для ровного угла */
+      text-align: center;
+      width: 100%;
     }
 
     @keyframes rainbowGlow {
@@ -341,26 +338,28 @@
     </div>
   </div>
 
-  <!-- Окно настроек с тонким радужным контуром -->
+  <!-- Окно настроек с надёжной тонкой радужной рамкой -->
   <div id="settings-modal" class="modal-overlay">
-    <div class="rainbow-modal">
-      <button id="close-settings" class="close-btn">&times;</button>
-      <div class="modal-title">⚙️ Настройки</div>
+    <div class="rainbow-border-wrapper">
+      <div class="black-modal-content">
+        <button id="close-settings" class="close-btn">&times;</button>
+        <div class="modal-title">⚙️ Настройки</div>
 
-      <div class="setting-item">
-        <span>Тема оформления:</span>
-        <div class="theme-toggle">
-          <button id="theme-dark-btn" class="theme-btn active">🌙 Тёмная</button>
-          <button id="theme-light-btn" class="theme-btn">☀️ Светлая</button>
+        <div class="setting-item">
+          <span>Тема оформления:</span>
+          <div class="theme-toggle">
+            <button id="theme-dark-btn" class="theme-btn active">🌙 Тёмная</button>
+            <button id="theme-light-btn" class="theme-btn">☀️ Светлая</button>
+          </div>
         </div>
-      </div>
 
-      <div class="danger-zone">
-        <div class="danger-header">
-          <span>❗</span>
-          <span>Опасная зона</span>
+        <div class="danger-zone">
+          <div class="danger-header">
+            <span>❗</span>
+            <span>Опасная зона</span>
+          </div>
+          <button id="open-confirm-reset" class="modal-btn modal-btn-danger">Сбросить счёт</button>
         </div>
-        <button id="open-confirm-reset" class="modal-btn modal-btn-danger">Сбросить счёт</button>
       </div>
     </div>
   </div>
@@ -693,4 +692,5 @@
     loop();
   </script>
 </body>
-</html>
+  </html>
+  
