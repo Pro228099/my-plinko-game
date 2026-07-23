@@ -1,4 +1,3 @@
-
 import os
 import sys
 import subprocess
@@ -41,6 +40,14 @@ if not BOT_TOKEN:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
+DONATE_TEXT = (
+    "поддержать автора вы можете тут(это врядли будет использоваться для улучшения бота):\n\n"
+    "Звёзды: @pro228099\n\n"
+    "Gram: <code>UQBBCz5GV1jVxS2SKqZWcVHrJCUVopBxT4yh_CohgE0rHyUw</code>\n\n"
+    "Litecoin (сеть LTC): <code>ltc1q2t30s3yvtllg3mhhgn3djt97l6as67llknt2xr</code>\n\n"
+    "Bitcoin (сеть BTC): <code>bc1qrpw58gskt7cvut77r9ahf5fznwljvwv57n8rz3</code>"
+)
+
 # --- КОМАНДА /start И /help ---
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -61,12 +68,31 @@ def send_welcome(message):
             callback_data="start_feedback"
         )
     )
+
+    # 3. Кнопка поддержки автора
+    inline_markup.add(
+        InlineKeyboardButton(
+            text="🌟 поддержать автора", 
+            callback_data="start_donate"
+        )
+    )
     
     bot.reply_to(
         message, 
         "Привет! Нажми на кнопку ниже, чтобы запустить игру или высказать свою идею:", 
         reply_markup=inline_markup
     )
+
+# --- НАЖАТИЕ НА ИНЛАЙН-КНОПКУ ДОНАТА ---
+@bot.callback_query_handler(func=lambda call: call.data == "start_donate")
+def callback_donate(call):
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, DONATE_TEXT, parse_mode='HTML')
+
+# --- КОМАНДА /donate ---
+@bot.message_handler(commands=['donate'])
+def donate_cmd(message):
+    bot.reply_to(message, DONATE_TEXT, parse_mode='HTML')
 
 # --- НАЖАТИЕ НА ИНЛАЙН-КНОПКУ ОТЗЫВА ---
 @bot.callback_query_handler(func=lambda call: call.data == "start_feedback")
@@ -126,3 +152,4 @@ def process_feedback_step(message):
 if __name__ == '__main__':
     print("Бот успешно запущен!")
     bot.infinity_polling()
+
