@@ -37,6 +37,11 @@
       color: #111;
     }
     body.light-theme .modal-text { color: #111; }
+    body.light-theme .feedback-textarea {
+      background: #f0f2f5 !important;
+      color: #111 !important;
+      border-color: rgba(0,0,0,0.15) !important;
+    }
 
     /* === ВЕРХНЯЯ ПАНЕЛЬ И ВЛАДКА МЕНЮ === */
     .settings-btn {
@@ -148,7 +153,7 @@
 
     /* === ЖЕЛЕЗОБЕТОННАЯ РАДУЖНАЯ РАМКА === */
     .rainbow-border-wrapper {
-      padding: 2px; /* Ширина неоновой рамки */
+      padding: 2px;
       border-radius: 18px;
       background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #00ff00, #00afff, #7a00ff, #ff00c8, #ff0000);
       background-size: 400%;
@@ -163,7 +168,7 @@
       background: #000000 !important;
       color: #ffffff;
       padding: 24px 20px;
-      border-radius: 16px; /* Чуть меньше радиуса внешнего контейнера для ровного угла */
+      border-radius: 16px;
       text-align: center;
       width: 100%;
     }
@@ -231,6 +236,25 @@
       font-weight: bold;
     }
 
+    /* === ПОЛЕ ВВОДА ОТЗЫВА === */
+    .feedback-textarea {
+      width: 100%;
+      height: 90px;
+      background: #111111;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .feedback-textarea:focus {
+      border-color: #2ea6ff;
+    }
+
     /* === КРАСНАЯ ОПАСНАЯ ЗОНА === */
     .danger-zone {
       margin-top: 15px;
@@ -279,7 +303,10 @@
       background: #d32f2f;
     }
     .modal-btn-secondary {
-      background: #546e7a;
+      background: #37474f;
+    }
+    .modal-btn-secondary:active {
+      background: #263238;
     }
 
     .modal-buttons-row {
@@ -320,7 +347,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.9</div>
+  <div class="app-version">v1.0.10</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -338,6 +365,16 @@
     </div>
   </div>
 
+  <!-- Окно обратной связи (Идея / Баг) -->
+  <div id="feedback-modal" class="modal-overlay">
+    <div class="modal-box">
+      <button id="close-feedback" class="close-btn">&times;</button>
+      <div class="modal-title">💡 Идея или Баг</div>
+      <textarea id="feedback-text" class="feedback-textarea" placeholder="Опишите вашу идею или найденную ошибку..."></textarea>
+      <button id="send-feedback-btn" class="modal-btn">Отправить</button>
+    </div>
+  </div>
+
   <!-- Окно настроек с надёжной тонкой радужной рамкой -->
   <div id="settings-modal" class="modal-overlay">
     <div class="rainbow-border-wrapper">
@@ -351,6 +388,11 @@
             <button id="theme-dark-btn" class="theme-btn active">🌙 Тёмная</button>
             <button id="theme-light-btn" class="theme-btn">☀️ Светлая</button>
           </div>
+        </div>
+
+        <div class="setting-item">
+          <span>Обратная связь:</span>
+          <button id="open-feedback-btn" class="modal-btn modal-btn-secondary">💡 Идея / Сообщить о баге</button>
         </div>
 
         <div class="danger-zone">
@@ -402,6 +444,12 @@
     const menuModal = document.getElementById('menu-modal');
     const closeMenu = document.getElementById('close-menu');
 
+    const openFeedbackBtn = document.getElementById('open-feedback-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const closeFeedback = document.getElementById('close-feedback');
+    const sendFeedbackBtn = document.getElementById('send-feedback-btn');
+    const feedbackText = document.getElementById('feedback-text');
+
     const confirmModal = document.getElementById('confirm-modal');
     const confirmYes = document.getElementById('confirm-yes');
     const confirmNo = document.getElementById('confirm-no');
@@ -435,7 +483,7 @@
     themeLightBtn.addEventListener('click', () => applyTheme('light'));
     applyTheme(currentTheme);
 
-    // --- ЛОГИКА МЕНЮ И НАСТРОЕК ---
+    // --- ЛОГИКА МЕНЮ, НАСТРОЕК И ОБРАТНОЙ СВЯЗИ ---
     menuTabBtn.addEventListener('click', () => {
       menuModal.style.display = 'flex';
     });
@@ -451,6 +499,37 @@
     closeSettings.addEventListener('click', () => {
       settingsModal.style.display = 'none';
     });
+
+    openFeedbackBtn.addEventListener('click', () => {
+      settingsModal.style.display = 'none';
+      feedbackModal.style.display = 'flex';
+    });
+
+    closeFeedback.addEventListener('click', () => {
+      feedbackModal.style.display = 'none';
+    });
+
+    // Отправка отзыва
+    function sendFeedback() {
+      const text = feedbackText.value.trim();
+      if (!text) {
+        alert("Пожалуйста, введите текст сообщения.");
+        return;
+      }
+
+      const payload = {
+        type: 'feedback',
+        text: text
+      };
+
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        alert("Отправка работает только внутри открытого WebApp в Telegram!");
+      }
+    }
+
+    sendFeedbackBtn.addEventListener('click', sendFeedback);
 
     openConfirmReset.addEventListener('click', () => {
       confirmModal.style.display = 'flex';
@@ -623,74 +702,4 @@
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
-        });
-
-        if (b.y + BALL_RADIUS >= canvas.height - 40) {
-          const slotIdx = getSlotIndex(b.x);
-          const mult = MULTIPLIERS[slotIdx];
-          const gained = 10 * mult;
-          
-          score += gained;
-          scoreEl.innerText = score;
-          saveScore();
-
-          const rect = canvas.getBoundingClientRect();
-          const slotWidth = canvas.width / MULTIPLIERS.length;
-          const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
-          const popupY = rect.top + (canvas.height - 40);
-
-          showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
-          if (gained > 0) animateScoreDisplay();
-
-          balls.splice(i, 1);
-          checkGameOver();
-        }
-      }
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
-      pegs.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      const slotWidth = canvas.width / MULTIPLIERS.length;
-      MULTIPLIERS.forEach((m, i) => {
-        const x = i * slotWidth;
-        const y = canvas.height - 40;
-        ctx.fillStyle = COLORS[i];
-        ctx.fillRect(x + 2, y, slotWidth - 4, 38);
-
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
-      });
-
-      ctx.save();
-      ctx.fillStyle = '#fffb00';
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#fffb00';
-      balls.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.restore();
-    }
-
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
-
-    loop();
-  </script>
-</body>
-  </html>
-  
+     
