@@ -38,7 +38,7 @@
     }
     body.light-theme .modal-text { color: #111; }
 
-    /* === ВЕРХНЯЯ ПАНЕЛЬ И ВЕРСИЯ === */
+    /* === ВЕРХНЯЯ ПАНЕЛЬ И ВЛАДКА МЕНЮ === */
     .settings-btn {
       position: absolute;
       top: 8px;
@@ -55,6 +55,34 @@
     .settings-btn:active {
       transform: rotate(90deg) scale(0.9);
       opacity: 1;
+    }
+
+    .menu-tab-btn {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      padding: 4px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 100;
+      user-select: none;
+      backdrop-filter: blur(4px);
+    }
+    .menu-tab-btn:active {
+      transform: translateX(-50%) scale(0.94);
+      background: rgba(255, 255, 255, 0.25);
+    }
+    body.light-theme .menu-tab-btn {
+      background: rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.15);
+      color: #111;
     }
 
     .app-version {
@@ -107,6 +135,7 @@
     }
 
     .modal-box {
+      position: relative;
       background: #242f3d;
       padding: 24px 20px;
       border-radius: 16px;
@@ -117,17 +146,17 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* === ЧЁРНОЕ ОКНО С РАДУЖНОЙ НЕОНОВОЙ РАМКОЙ === */
+    /* === ЧЁРНОЕ ОКНО НАСТРОЕК С РАДУЖНОЙ НЕОНОВОЙ РАМКОЙ === */
     .rainbow-modal {
       position: relative;
-      background: #000000;
-      color: #ffffff;
+      background: #000000 !important;
+      color: #ffffff !important;
       padding: 24px 20px;
       border-radius: 16px;
       text-align: center;
       max-width: 310px;
       width: 88%;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
       z-index: 1;
     }
     .rainbow-modal::before {
@@ -180,7 +209,8 @@
     .theme-toggle {
       display: flex;
       width: 100%;
-      background: rgba(255, 255, 255, 0.1);
+      background: #111111;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       padding: 3px;
       gap: 4px;
@@ -207,7 +237,7 @@
     .danger-zone {
       margin-top: 15px;
       padding: 12px;
-      background: rgba(244, 67, 54, 0.15);
+      background: rgba(244, 67, 54, 0.12);
       border: 1px solid #f44336;
       border-radius: 12px;
       text-align: left;
@@ -291,11 +321,24 @@
 <body>
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
-  <div class="app-version">v1.0.8</div>
+  <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
+  <div class="app-version">v1.0.9</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
   <div class="hint">Нажми на верхнюю область, чтобы сбросить шарик</div>
+
+  <!-- Окно Меню -->
+  <div id="menu-modal" class="modal-overlay">
+    <div class="modal-box">
+      <button id="close-menu" class="close-btn">&times;</button>
+      <div class="modal-title">📋 Меню</div>
+      <div style="font-size: 22px; font-weight: 900; color: #ff9800; margin: 18px 0 6px 0; letter-spacing: 1px;">
+        COMING SOON
+      </div>
+      <div style="font-size: 13px; color: #8e9ca8;">Этот раздел находится в разработке</div>
+    </div>
+  </div>
 
   <!-- Окно настроек с радужным неоном -->
   <div id="settings-modal" class="modal-overlay">
@@ -355,6 +398,10 @@
     const closeSettings = document.getElementById('close-settings');
     const openConfirmReset = document.getElementById('open-confirm-reset');
 
+    const menuTabBtn = document.getElementById('menu-tab-btn');
+    const menuModal = document.getElementById('menu-modal');
+    const closeMenu = document.getElementById('close-menu');
+
     const confirmModal = document.getElementById('confirm-modal');
     const confirmYes = document.getElementById('confirm-yes');
     const confirmNo = document.getElementById('confirm-no');
@@ -388,7 +435,15 @@
     themeLightBtn.addEventListener('click', () => applyTheme('light'));
     applyTheme(currentTheme);
 
-    // --- ЛОГИКА ОКНА НАСТРОЕК И ПОДТВЕРЖДЕНИЯ ---
+    // --- ЛОГИКА МЕНЮ И НАСТРОЕК ---
+    menuTabBtn.addEventListener('click', () => {
+      menuModal.style.display = 'flex';
+    });
+
+    closeMenu.addEventListener('click', () => {
+      menuModal.style.display = 'none';
+    });
+
     settingsBtn.addEventListener('click', () => {
       settingsModal.style.display = 'flex';
     });
@@ -428,7 +483,7 @@
       resetModal.style.display = 'none';
     });
 
-    // --- УБОЙНАЯ СИСТЕМА СОХРАНЕНИЯ ---
+    // --- СИСТЕМА СОХРАНЕНИЯ ---
     function loadScore() {
       const localSaved = localStorage.getItem('plinko_score');
       if (localSaved !== null) {
