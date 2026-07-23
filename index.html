@@ -342,7 +342,7 @@
   <div class="header">
     <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
-    <div class="version-tag">v1.1.1</div>
+    <div class="version-tag">v1.1.2</div>
   </div>
 
   <div class="canvas-container">
@@ -694,7 +694,7 @@
       settingsModal.style.display = 'none';
     });
 
-    // Отправка отзыва
+    // === БЕЗОПАСНАЯ ОТПРАВКА ОТЗЫВА ===
     sendFeedbackBtn.addEventListener('click', () => {
       const text = feedbackInput.value.trim();
       if (!text) {
@@ -704,17 +704,26 @@
 
       if (tg && typeof tg.sendData === 'function') {
         try {
+          // Передаем данные боту в формате JSON с ключом action: 'feedback'
           tg.sendData(JSON.stringify({
-            type: "feedback",
+            action: 'feedback',
             text: text
           }));
-          feedbackStatus.innerText = "Отправлено!";
+          
+          feedbackStatus.innerText = "Сообщение отправлено!";
           feedbackInput.value = "";
-        } catch (e){
-        alert("Ошибка отправки: " + e.message);
+          
+          // Закрываем окно через 1.5 секунды после успешной отправки
+          setTimeout(() => {
+            settingsModal.style.display = 'none';
+            feedbackStatus.innerText = "";
+          }, 1500);
+
+        } catch (e) {
+          alert("Ошибка отправки: " + e.message);
         }
       } else {
-        alert("Отправка сообщений доступна только при открытии через кнопку Меню в Telegram!");
+        alert("Отправка доступна только при открытии через кнопку веб-приложения в Telegram!");
       }
     });
 
