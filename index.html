@@ -151,7 +151,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* === ЖЕЛЕЗОБЕТОННАЯ РАДУЖНАЯ РАМКА === */
+    /* === РАДУЖНАЯ РАМКА === */
     .rainbow-border-wrapper {
       padding: 2px;
       border-radius: 18px;
@@ -198,7 +198,6 @@
       color: #ffffff;
     }
 
-    /* === ЭЛЕМЕНТЫ НАСТРОЕК === */
     .setting-item {
       display: flex;
       flex-direction: column;
@@ -236,7 +235,6 @@
       font-weight: bold;
     }
 
-    /* === ПОЛЕ ВВОДА ОТЗЫВА === */
     .feedback-textarea {
       width: 100%;
       height: 90px;
@@ -255,7 +253,6 @@
       border-color: #2ea6ff;
     }
 
-    /* === КРАСНАЯ ОПАСНАЯ ЗОНА === */
     .danger-zone {
       margin-top: 15px;
       padding: 12px;
@@ -314,7 +311,6 @@
       gap: 10px;
     }
 
-    /* === АНИМАЦИИ === */
     .floating-score {
       position: absolute;
       font-weight: 900;
@@ -347,7 +343,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.10</div>
+  <div class="app-version">v1.0.11</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -375,7 +371,7 @@
     </div>
   </div>
 
-  <!-- Окно настроек с надёжной тонкой радужной рамкой -->
+  <!-- Окно настроек -->
   <div id="settings-modal" class="modal-overlay">
     <div class="rainbow-border-wrapper">
       <div class="black-modal-content">
@@ -429,12 +425,12 @@
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
+    // 1. ИНИЦИАЛИЗАЦИЯ DOM И ПЕРЕМЕННЫХ
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
     const scoreBoardEl = document.getElementById('score-board');
     
-    // Элементы модальных окон
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettings = document.getElementById('close-settings');
@@ -464,7 +460,32 @@
     let saveTimeout = null;
     let currentTheme = localStorage.getItem('plinko_theme') || 'dark';
 
-    // --- УПРАВЛЕНИЕ ТЕМОЙ ---
+    // 2. НАСТРОЙКИ СЕТКИ И ФИЗИКИ (ОБЪЯВЛЯЕМ МАССИВЫ ДО ВСЕХ ВЫЗОВОВ)
+    const ROWS = 7;
+    const PEG_RADIUS = 4;
+    const BALL_RADIUS = 7;
+    const GRAVITY = 0.25;
+    const RESTITUTION = 0.5;
+
+    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
+    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
+
+    const pegs = [];
+    const balls = [];
+
+    const startY = 80;
+    const rowSpacing = 45;
+    const colSpacing = 38;
+
+    for (let r = 0; r < ROWS; r++) {
+      const count = r + 3;
+      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (let c = 0; c < count; c++) {
+        pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
+      }
+    }
+
+    // 3. ФУНКЦИИ
     function applyTheme(theme) {
       currentTheme = theme;
       localStorage.setItem('plinko_theme', theme);
@@ -479,90 +500,12 @@
       }
     }
 
-    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
-    themeLightBtn.addEventListener('click', () => applyTheme('light'));
-    applyTheme(currentTheme);
-
-    // --- ЛОГИКА МЕНЮ, НАСТРОЕК И ОБРАТНОЙ СВЯЗИ ---
-    menuTabBtn.addEventListener('click', () => {
-      menuModal.style.display = 'flex';
-    });
-
-    closeMenu.addEventListener('click', () => {
-      menuModal.style.display = 'none';
-    });
-
-    settingsBtn.addEventListener('click', () => {
-      settingsModal.style.display = 'flex';
-    });
-
-    closeSettings.addEventListener('click', () => {
-      settingsModal.style.display = 'none';
-    });
-
-    openFeedbackBtn.addEventListener('click', () => {
-      settingsModal.style.display = 'none';
-      feedbackModal.style.display = 'flex';
-    });
-
-    closeFeedback.addEventListener('click', () => {
-      feedbackModal.style.display = 'none';
-    });
-
-    // Отправка отзыва
-    function sendFeedback() {
-      const text = feedbackText.value.trim();
-      if (!text) {
-        alert("Пожалуйста, введите текст сообщения.");
-        return;
-      }
-
-      const payload = {
-        type: 'feedback',
-        text: text
-      };
-
-      if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify(payload));
-      } else {
-        alert("Отправка работает только внутри открытого WebApp в Telegram!");
-      }
-    }
-
-    sendFeedbackBtn.addEventListener('click', sendFeedback);
-
-    openConfirmReset.addEventListener('click', () => {
-      confirmModal.style.display = 'flex';
-    });
-
-    confirmNo.addEventListener('click', () => {
-      confirmModal.style.display = 'none';
-    });
-
-    confirmYes.addEventListener('click', () => {
-      score = 100;
-      scoreEl.innerText = score;
-      saveScore();
-      forceSaveCloud();
-      confirmModal.style.display = 'none';
-      settingsModal.style.display = 'none';
-    });
-
-    // --- ПРОВЕРКА И СБРОС СЧЁТА ---
     function checkGameOver() {
       if (score < 10 && balls.length === 0) {
         resetModal.style.display = 'flex';
       }
     }
 
-    resetBtn.addEventListener('click', () => {
-      score = 100;
-      scoreEl.innerText = score;
-      saveScore();
-      resetModal.style.display = 'none';
-    });
-
-    // --- СИСТЕМА СОХРАНЕНИЯ ---
     function loadScore() {
       const localSaved = localStorage.getItem('plinko_score');
       if (localSaved !== null) {
@@ -598,57 +541,24 @@
       }
     }
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        forceSaveCloud();
+    function sendFeedback() {
+      const text = feedbackText.value.trim();
+      if (!text) {
+        alert("Пожалуйста, введите текст сообщения.");
+        return;
       }
-    });
 
-    loadScore();
+      const payload = {
+        type: 'feedback',
+        text: text
+      };
 
-    // Настройки сетки и физики
-    const ROWS = 7;
-    const PEG_RADIUS = 4;
-    const BALL_RADIUS = 7;
-    const GRAVITY = 0.25;
-    const RESTITUTION = 0.5;
-
-    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
-
-    const pegs = [];
-    const startY = 80;
-    const rowSpacing = 45;
-    const colSpacing = 38;
-
-    for (let r = 0; r < ROWS; r++) {
-      const count = r + 3;
-      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
-      for (let c = 0; c < count; c++) {
-        pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        alert("Отправка работает только внутри открытого WebApp в Telegram!");
       }
     }
-
-    const balls = [];
-
-    canvas.addEventListener('pointerdown', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      if (clickY < 60 && score >= 10) {
-        score -= 10;
-        scoreEl.innerText = score;
-        saveScore();
-
-        balls.push({
-          x: clickX,
-          y: Math.max(20, clickY),
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: 0
-        });
-      }
-    });
 
     function getSlotIndex(x) {
       const slotWidth = canvas.width / MULTIPLIERS.length;
@@ -702,4 +612,81 @@
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
-     
+        });
+
+        if (b.y + BALL_RADIUS >= canvas.height - 40) {
+          const slotIdx = getSlotIndex(b.x);
+          const mult = MULTIPLIERS[slotIdx];
+          const gained = 10 * mult;
+          
+          score += gained;
+          scoreEl.innerText = score;
+          saveScore();
+
+          const rect = canvas.getBoundingClientRect();
+          const slotWidth = canvas.width / MULTIPLIERS.length;
+          const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
+          const popupY = rect.top + (canvas.height - 40);
+
+          showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
+          if (gained > 0) animateScoreDisplay();
+
+          balls.splice(i, 1);
+          checkGameOver();
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
+      pegs.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      MULTIPLIERS.forEach((m, i) => {
+        const x = i * slotWidth;
+        const y = canvas.height - 40;
+        ctx.fillStyle = COLORS[i];
+        ctx.fillRect(x + 2, y, slotWidth - 4, 38);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
+      });
+
+      ctx.save();
+      ctx.fillStyle = '#fffb00';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#fffb00';
+      balls.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // 4. НАВЕШИВАНИЕ ОБРАБОТЧИКОВ СОБЫТИЙ
+    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
+    themeLightBtn.addEventListener('click', () => applyTheme('light'));
+
+    menuTabBtn.addEventListener('click', () => { menuModal.style.display = 'flex'; });
+    closeMenu.addEventListener('click', () => { menuModal.style.display = 'none'; });
+
+    settingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
+    closeSettings.addEventListener('click', () => { settingsModal.style.display = 'none'; });
+
+    openFeedbackBtn.addEventListener('click', () => {
+      settingsModal.style.
