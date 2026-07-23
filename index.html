@@ -19,6 +19,8 @@
       overflow: hidden;
       position: relative;
       transition: background 0.3s ease, color 0.3s ease;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* === СВЕТЛАЯ ТЕМА === */
@@ -43,46 +45,35 @@
       border-color: rgba(0,0,0,0.15) !important;
     }
 
-    /* === ВЕРХНЯЯ ПАНЕЛЬ И ВЛАДКА МЕНЮ === */
+    /* === ВЕРХНЯЯ ПАНЕЛЬ И КНОПКИ === */
     .settings-btn {
       position: absolute;
-      top: 8px;
+      top: 10px;
       left: 12px;
-      font-size: 20px;
+      font-size: 22px;
       background: none;
       border: none;
       cursor: pointer;
-      opacity: 0.75;
-      transition: transform 0.3s ease, opacity 0.2s ease;
-      z-index: 100;
-      user-select: none;
-    }
-    .settings-btn:active {
-      transform: rotate(90deg) scale(0.9);
-      opacity: 1;
+      opacity: 0.85;
+      z-index: 500;
+      padding: 6px;
     }
 
     .menu-tab-btn {
       position: absolute;
-      top: 8px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: #fff;
-      padding: 4px 16px;
+      padding: 6px 18px;
       border-radius: 12px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-      z-index: 100;
-      user-select: none;
+      z-index: 500;
       backdrop-filter: blur(4px);
-    }
-    .menu-tab-btn:active {
-      transform: translateX(-50%) scale(0.94);
-      background: rgba(255, 255, 255, 0.25);
     }
     body.light-theme .menu-tab-btn {
       background: rgba(0, 0, 0, 0.08);
@@ -92,45 +83,44 @@
 
     .app-version {
       position: absolute;
-      top: 8px;
+      top: 12px;
       right: 12px;
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.4);
       font-family: monospace;
       pointer-events: none;
-      user-select: none;
     }
     body.light-theme .app-version {
-      color: rgba(0, 0, 0, 0.35);
+      color: rgba(0, 0, 0, 0.4);
     }
 
     #score-board {
       font-size: 20px;
       margin-bottom: 10px;
       font-weight: bold;
-      transition: transform 0.1s ease;
       display: inline-block;
+      margin-top: 40px;
     }
     canvas {
       background: #10171e;
       border-radius: 12px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       touch-action: none;
-      transition: background 0.3s ease;
+      cursor: pointer;
     }
     .hint {
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 13px;
       color: #8e9ca8;
     }
 
     /* === МОДАЛЬНЫЕ ОКНА === */
     .modal-overlay {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       background: rgba(0, 0, 0, 0.75);
       display: none;
       align-items: center;
@@ -151,7 +141,6 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* === РАДУЖНАЯ РАМКА === */
     .rainbow-border-wrapper {
       padding: 2px;
       border-radius: 18px;
@@ -160,7 +149,6 @@
       animation: rainbowGlow 8s linear infinite;
       max-width: 310px;
       width: 88%;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
     }
 
     .black-modal-content {
@@ -188,7 +176,6 @@
       font-size: 22px;
       color: #8e9ca8;
       cursor: pointer;
-      line-height: 1;
     }
 
     .modal-title {
@@ -227,7 +214,6 @@
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
-      transition: all 0.2s;
     }
     .theme-btn.active {
       background: #2ea6ff;
@@ -248,9 +234,6 @@
       resize: none;
       outline: none;
       margin-bottom: 12px;
-    }
-    .feedback-textarea:focus {
-      border-color: #2ea6ff;
     }
 
     .danger-zone {
@@ -288,23 +271,9 @@
       border-radius: 10px;
       cursor: pointer;
       width: 100%;
-      transition: background 0.2s ease, transform 0.1s ease;
     }
-    .modal-btn:active {
-      transform: scale(0.96);
-    }
-    .modal-btn-danger {
-      background: #f44336;
-    }
-    .modal-btn-danger:active {
-      background: #d32f2f;
-    }
-    .modal-btn-secondary {
-      background: #37474f;
-    }
-    .modal-btn-secondary:active {
-      background: #263238;
-    }
+    .modal-btn-danger { background: #f44336; }
+    .modal-btn-secondary { background: #37474f; }
 
     .modal-buttons-row {
       display: flex;
@@ -316,7 +285,6 @@
       font-weight: 900;
       font-size: 22px;
       pointer-events: none;
-      user-select: none;
       z-index: 1000;
       animation: floatUp 0.8s ease-out forwards;
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
@@ -328,40 +296,47 @@
       100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
     }
 
-    .score-bump {
-      animation: bump 0.25s ease-out;
-    }
-
-    @keyframes bump {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.25); color: #4caf50; }
-      100% { transform: scale(1); color: inherit; }
+    /* Окно перехвата критических ошибок */
+    #error-box {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #ff1744;
+      color: #fff;
+      padding: 12px;
+      font-size: 12px;
+      z-index: 99999;
+      word-break: break-all;
     }
   </style>
 </head>
 <body>
 
+  <div id="error-box"></div>
+
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.11</div>
+  <div class="app-version">v1.0.10</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
-  <div class="hint">Нажми на верхнюю область, чтобы сбросить шарик</div>
+  <div class="hint">Нажми на игровое поле, чтобы сбросить шарик (-10)</div>
 
   <!-- Окно Меню -->
   <div id="menu-modal" class="modal-overlay">
     <div class="modal-box">
       <button id="close-menu" class="close-btn">&times;</button>
       <div class="modal-title">📋 Меню</div>
-      <div style="font-size: 22px; font-weight: 900; color: #ff9800; margin: 18px 0 6px 0; letter-spacing: 1px;">
+      <div style="font-size: 20px; font-weight: 900; color: #ff9800; margin: 18px 0 6px 0;">
         COMING SOON
       </div>
       <div style="font-size: 13px; color: #8e9ca8;">Этот раздел находится в разработке</div>
     </div>
   </div>
 
-  <!-- Окно обратной связи (Идея / Баг) -->
+  <!-- Окно обратной связи -->
   <div id="feedback-modal" class="modal-overlay">
     <div class="modal-box">
       <button id="close-feedback" class="close-btn">&times;</button>
@@ -422,65 +397,77 @@
   </div>
 
   <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) tg.expand();
+    // Ловец ошибок для отладки прямо в Telegram
+    window.onerror = function(msg, url, line) {
+      var errBox = document.getElementById('error-box');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.innerHTML = '<b>Ошибка JS:</b> ' + msg + '<br><small>Строка: ' + line + '</small>';
+      }
+      return false;
+    };
 
-    // 1. ИНИЦИАЛИЗАЦИЯ DOM И ПЕРЕМЕННЫХ
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
-    const scoreBoardEl = document.getElementById('score-board');
-    
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettings = document.getElementById('close-settings');
-    const openConfirmReset = document.getElementById('open-confirm-reset');
+    var tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg && tg.expand) {
+      tg.expand();
+    }
 
-    const menuTabBtn = document.getElementById('menu-tab-btn');
-    const menuModal = document.getElementById('menu-modal');
-    const closeMenu = document.getElementById('close-menu');
+    // 1. ИНИЦИАЛИЗАЦИЯ
+    var canvas = document.getElementById('gameCanvas');
+    var ctx = canvas.getContext('2d');
+    var scoreEl = document.getElementById('score');
+    var scoreBoardEl = document.getElementById('score-board');
 
-    const openFeedbackBtn = document.getElementById('open-feedback-btn');
-    const feedbackModal = document.getElementById('feedback-modal');
-    const closeFeedback = document.getElementById('close-feedback');
-    const sendFeedbackBtn = document.getElementById('send-feedback-btn');
-    const feedbackText = document.getElementById('feedback-text');
+    var settingsBtn = document.getElementById('settings-btn');
+    var settingsModal = document.getElementById('settings-modal');
+    var closeSettings = document.getElementById('close-settings');
+    var openConfirmReset = document.getElementById('open-confirm-reset');
 
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmYes = document.getElementById('confirm-yes');
-    const confirmNo = document.getElementById('confirm-no');
+    var menuTabBtn = document.getElementById('menu-tab-btn');
+    var menuModal = document.getElementById('menu-modal');
+    var closeMenu = document.getElementById('close-menu');
 
-    const resetModal = document.getElementById('reset-modal');
-    const resetBtn = document.getElementById('reset-btn');
+    var openFeedbackBtn = document.getElementById('open-feedback-btn');
+    var feedbackModal = document.getElementById('feedback-modal');
+    var closeFeedback = document.getElementById('close-feedback');
+    var sendFeedbackBtn = document.getElementById('send-feedback-btn');
+    var feedbackText = document.getElementById('feedback-text');
 
-    const themeDarkBtn = document.getElementById('theme-dark-btn');
-    const themeLightBtn = document.getElementById('theme-light-btn');
+    var confirmModal = document.getElementById('confirm-modal');
+    var confirmYes = document.getElementById('confirm-yes');
+    var confirmNo = document.getElementById('confirm-no');
 
-    let score = 100;
-    let saveTimeout = null;
-    let currentTheme = localStorage.getItem('plinko_theme') || 'dark';
+    var resetModal = document.getElementById('reset-modal');
+    var resetBtn = document.getElementById('reset-btn');
 
-    // 2. НАСТРОЙКИ СЕТКИ И ФИЗИКИ (ОБЪЯВЛЯЕМ МАССИВЫ ДО ВСЕХ ВЫЗОВОВ)
-    const ROWS = 7;
-    const PEG_RADIUS = 4;
-    const BALL_RADIUS = 7;
-    const GRAVITY = 0.25;
-    const RESTITUTION = 0.5;
+    var themeDarkBtn = document.getElementById('theme-dark-btn');
+    var themeLightBtn = document.getElementById('theme-light-btn');
 
-    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
+    var score = 100;
+    var saveTimeout = null;
+    var currentTheme = localStorage.getItem('plinko_theme') || 'dark';
 
-    const pegs = [];
-    const balls = [];
+    // 2. ФИЗИКА И МАССИВЫ
+    var ROWS = 7;
+    var PEG_RADIUS = 4;
+    var BALL_RADIUS = 7;
+    var GRAVITY = 0.25;
+    var RESTITUTION = 0.5;
 
-    const startY = 80;
-    const rowSpacing = 45;
-    const colSpacing = 38;
+    var MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
+    var COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
 
-    for (let r = 0; r < ROWS; r++) {
-      const count = r + 3;
-      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
-      for (let c = 0; c < count; c++) {
+    var pegs = [];
+    var balls = [];
+
+    var startY = 80;
+    var rowSpacing = 45;
+    var colSpacing = 38;
+
+    for (var r = 0; r < ROWS; r++) {
+      var count = r + 3;
+      var startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (var c = 0; c < count; c++) {
         pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
       }
     }
@@ -507,15 +494,15 @@
     }
 
     function loadScore() {
-      const localSaved = localStorage.getItem('plinko_score');
+      var localSaved = localStorage.getItem('plinko_score');
       if (localSaved !== null) {
         score = parseInt(localSaved, 10);
         scoreEl.innerText = score;
       }
 
-      if (tg?.CloudStorage) {
-        tg.CloudStorage.getItem('plinko_score', (err, value) => {
-          if (!err && value !== null && value !== undefined) {
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem('plinko_score', function(err, value) {
+          if (!err && value !== null && value !== undefined && value !== '') {
             score = parseInt(value, 10);
             scoreEl.innerText = score;
             localStorage.setItem('plinko_score', score.toString());
@@ -527,31 +514,28 @@
       }
     }
 
+    function forceSaveCloud() {
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.setItem('plinko_score', score.toString(), function(err) {
+          if (err) console.error('Ошибка сохранения:', err);
+        });
+      }
+    }
+
     function saveScore() {
       localStorage.setItem('plinko_score', score.toString());
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(forceSaveCloud, 500);
     }
 
-    function forceSaveCloud() {
-      if (tg?.CloudStorage) {
-        tg.CloudStorage.setItem('plinko_score', score.toString(), (err, stored) => {
-          if (err) console.error('Ошибка сохранения в CloudStorage:', err);
-        });
-      }
-    }
-
     function sendFeedback() {
-      const text = feedbackText.value.trim();
+      var text = feedbackText.value.trim();
       if (!text) {
         alert("Пожалуйста, введите текст сообщения.");
         return;
       }
 
-      const payload = {
-        type: 'feedback',
-        text: text
-      };
+      var payload = { type: 'feedback', text: text };
 
       if (tg && tg.sendData) {
         tg.sendData(JSON.stringify(payload));
@@ -561,34 +545,26 @@
     }
 
     function getSlotIndex(x) {
-      const slotWidth = canvas.width / MULTIPLIERS.length;
-      let idx = Math.floor(x / slotWidth);
+      var slotWidth = canvas.width / MULTIPLIERS.length;
+      var idx = Math.floor(x / slotWidth);
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
     }
 
     function showFloatingScore(x, y, points, color) {
-      const el = document.createElement('div');
+      var el = document.createElement('div');
       el.className = 'floating-score';
-      el.innerText = `+${points}`;
+      el.innerText = '+' + points;
       el.style.color = color;
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
       document.body.appendChild(el);
 
-      setTimeout(() => {
-        el.remove();
-      }, 800);
-    }
-
-    function animateScoreDisplay() {
-      scoreBoardEl.classList.remove('score-bump');
-      void scoreBoardEl.offsetWidth;
-      scoreBoardEl.classList.add('score-bump');
+      setTimeout(function() { el.remove(); }, 800);
     }
 
     function update() {
-      for (let i = balls.length - 1; i >= 0; i--) {
-        const b = balls[i];
+      for (var i = balls.length - 1; i >= 0; i--) {
+        var b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
@@ -596,40 +572,40 @@
         if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
         if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
-        pegs.forEach(p => {
-          const dx = b.x - p.x;
-          const dy = b.y - p.y;
-          const dist = Math.hypot(dx, dy);
-          const minDist = BALL_RADIUS + PEG_RADIUS;
+        for (var j = 0; j < pegs.length; j++) {
+          var p = pegs[j];
+          var dx = b.x - p.x;
+          var dy = b.y - p.y;
+          var dist = Math.hypot(dx, dy);
+          var minDist = BALL_RADIUS + PEG_RADIUS;
 
           if (dist < minDist) {
-            const angle = Math.atan2(dy, dx);
-            const overlap = minDist - dist;
+            var angle = Math.atan2(dy, dx);
+            var overlap = minDist - dist;
             b.x += Math.cos(angle) * overlap;
             b.y += Math.sin(angle) * overlap;
 
-            const speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
+            var speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
-        });
+        }
 
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
-          const slotIdx = getSlotIndex(b.x);
-          const mult = MULTIPLIERS[slotIdx];
-          const gained = 10 * mult;
-          
+          var slotIdx = getSlotIndex(b.x);
+          var mult = MULTIPLIERS[slotIdx];
+          var gained = 10 * mult;
+
           score += gained;
           scoreEl.innerText = score;
           saveScore();
 
-          const rect = canvas.getBoundingClientRect();
-          const slotWidth = canvas.width / MULTIPLIERS.length;
-          const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
-          const popupY = rect.top + (canvas.height - 40);
+          var rect = canvas.getBoundingClientRect();
+          var slotWidth = canvas.width / MULTIPLIERS.length;
+          var popupX = rect.left + (slotIdx + 0.5) * slotWidth;
+          var popupY = rect.top + (canvas.height - 40);
 
           showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
-          if (gained > 0) animateScoreDisplay();
 
           balls.splice(i, 1);
           checkGameOver();
@@ -641,34 +617,36 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
-      pegs.forEach(p => {
+      for (var i = 0; i < pegs.length; i++) {
+        var p = pegs[i];
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
 
-      const slotWidth = canvas.width / MULTIPLIERS.length;
-      MULTIPLIERS.forEach((m, i) => {
-        const x = i * slotWidth;
-        const y = canvas.height - 40;
-        ctx.fillStyle = COLORS[i];
+      var slotWidth = canvas.width / MULTIPLIERS.length;
+      for (var k = 0; k < MULTIPLIERS.length; k++) {
+        var x = k * slotWidth;
+        var y = canvas.height - 40;
+        ctx.fillStyle = COLORS[k];
         ctx.fillRect(x + 2, y, slotWidth - 4, 38);
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
-      });
+        ctx.fillText('x' + MULTIPLIERS[k], x + slotWidth / 2, y + 24);
+      }
 
       ctx.save();
       ctx.fillStyle = '#fffb00';
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = '#fffb00';
-      balls.forEach(b => {
+      for (var m = 0; m < balls.length; m++) {
+        var b = balls[m];
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
       ctx.restore();
     }
 
@@ -678,15 +656,39 @@
       requestAnimationFrame(loop);
     }
 
-    // 4. НАВЕШИВАНИЕ ОБРАБОТЧИКОВ СОБЫТИЙ
-    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
-    themeLightBtn.addEventListener('click', () => applyTheme('light'));
+    // 4. СОБЫТИЯ
+    themeDarkBtn.onclick = function() { applyTheme('dark'); };
+    themeLightBtn.onclick = function() { applyTheme('light'); };
 
-    menuTabBtn.addEventListener('click', () => { menuModal.style.display = 'flex'; });
-    closeMenu.addEventListener('click', () => { menuModal.style.display = 'none'; });
+    menuTabBtn.onclick = function() { menuModal.style.display = 'flex'; };
+    closeMenu.onclick = function() { menuModal.style.display = 'none'; };
 
-    settingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
-    closeSettings.addEventListener('click', () => { settingsModal.style.display = 'none'; });
+    settingsBtn.onclick = function() { settingsModal.style.display = 'flex'; };
+    closeSettings.onclick = function() { settingsModal.style.display = 'none'; };
 
-    openFeedbackBtn.addEventListener('click', () => {
-      settingsModal.style.
+    openFeedbackBtn.onclick = function() {
+      settingsModal.style.display = 'none';
+      feedbackModal.style.display = 'flex';
+    };
+    closeFeedback.onclick = function() { feedbackModal.style.display = 'none'; };
+    sendFeedbackBtn.onclick = sendFeedback;
+
+    openConfirmReset.onclick = function() { confirmModal.style.display = 'flex'; };
+    confirmNo.onclick = function() { confirmModal.style.display = 'none'; };
+    confirmYes.onclick = function() {
+      score = 100;
+      scoreEl.innerText = score;
+      saveScore();
+      forceSaveCloud();
+      confirmModal.style.display = 'none';
+      settingsModal.style.display = 'none';
+    };
+
+    resetBtn.onclick = function() {
+      score = 100;
+      scoreEl.innerText = score;
+      saveScore();
+      resetModal.style.display = 'none';
+    };
+
+    // Клики по 
