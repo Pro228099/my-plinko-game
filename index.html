@@ -70,7 +70,6 @@
       color: #888888;
     }
     body.light-theme canvas {
-      background: #ffffff;
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       border-color: rgba(0, 0, 0, 0.1);
     }
@@ -142,7 +141,7 @@
     }
 
     .score-container {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: bold;
     }
 
@@ -216,7 +215,6 @@
       width: 100%;
       height: auto;
       aspect-ratio: 360 / 580;
-      background: #18222d;
       border-radius: 16px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -291,7 +289,16 @@
     .modal-title {
       font-size: 16px;
       font-weight: bold;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      font-weight: 600;
+      color: #708499;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      text-align: left;
     }
 
     .setting-item {
@@ -330,32 +337,31 @@
       color: #ffffff;
     }
 
-    /* === СЕТКА ВЫБОРА ЦВЕТА СКИНОВ === */
+    /* === СЕТКИ ВЫБОРА ЦВЕТА === */
     .skins-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-top: 10px;
-      margin-bottom: 15px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .skin-item {
-      width: 50px;
-      height: 50px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       cursor: pointer;
       margin: 0 auto;
       border: 3px solid transparent;
       transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      box-shadow: inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.7);
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.5), inset 0 3px 6px rgba(255,255,255,0.6);
     }
     .skin-item:active {
       transform: scale(0.9);
     }
     .skin-item.selected {
       border-color: #ffffff;
-      transform: scale(1.1);
-      box-shadow: 0 0 12px rgba(255,255,255,0.8), inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.7);
+      transform: scale(1.08);
+      box-shadow: 0 0 10px rgba(255,255,255,0.8), inset 0 -3px 6px rgba(0,0,0,0.5), inset 0 3px 6px rgba(255,255,255,0.6);
     }
 
     .danger-zone {
@@ -400,16 +406,16 @@
   <div class="header">
     <div class="header-left">
       <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
-      <button id="skins-btn" class="icon-btn-neon" title="Скины">🔴</button>
+      <button id="skins-btn" class="icon-btn-neon" title="Скины">🎨</button>
     </div>
     
     <div class="header-center">
       <button id="menu-btn" class="menu-btn-text">Меню</button>
-      <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
+      <div class="score-container"><span id="score" class="score-value">100$</span></div>
     </div>
 
     <div class="version-tag">
-      v1.2.6
+      v1.2.7
       <span class="author-tag">by @pro228099</span>
     </div>
   </div>
@@ -422,18 +428,20 @@
   <!-- ИГРОВОЕ ПОЛЕ -->
   <div class="canvas-container">
     <canvas id="gameCanvas" width="360" height="580"></canvas>
-    <div class="hint">Нажмите на поле, чтобы запустить шар (-10)</div>
+    <div class="hint">Нажмите на поле, чтобы запустить шар (-10$)</div>
   </div>
 
-  <!-- Модальное окно "Скины" -->
+  <!-- Модальное окно "Скины и Оформление" -->
   <div id="skins-modal" class="modal-overlay">
     <div class="modal-box">
       <button id="close-skins" class="close-btn">&times;</button>
-      <div class="modal-title">🎨 Цвет Шарика</div>
-      <div style="font-size: 13px; color: #708499; margin-bottom: 12px;">Выберите стандартный цвет шарика:</div>
-      <div class="skins-grid" id="skins-grid">
-        <!-- Генерируется из JS -->
-      </div>
+      <div class="modal-title">🎨 Внешний вид</div>
+      
+      <div class="section-subtitle">🔴 Цвет шарика:</div>
+      <div class="skins-grid" id="ball-skins-grid"></div>
+
+      <div class="section-subtitle">🖼️ Цвет фона поля:</div>
+      <div class="skins-grid" id="bg-skins-grid"></div>
     </div>
   </div>
 
@@ -480,7 +488,7 @@
   <!-- Подтверждение сброса -->
   <div id="confirm-modal" class="modal-overlay">
     <div class="modal-box" style="border: 1px solid rgba(255,255,255,0.1); animation: none;">
-      <div style="font-size: 15px; margin-bottom: 15px;">Точно сбросить счёт до 100?</div>
+      <div style="font-size: 15px; margin-bottom: 15px;">Точно сбросить счёт до 100$?</div>
       <div class="modal-buttons-row">
         <button id="confirm-yes" class="btn btn-danger" style="padding: 10px;">Да</button>
         <button id="confirm-no" class="btn btn-secondary" style="padding: 10px;">Отмена</button>
@@ -509,7 +517,8 @@
     const skinsBtn = document.getElementById('skins-btn');
     const skinsModal = document.getElementById('skins-modal');
     const closeSkins = document.getElementById('close-skins');
-    const skinsGrid = document.getElementById('skins-grid');
+    const ballSkinsGrid = document.getElementById('ball-skins-grid');
+    const bgSkinsGrid = document.getElementById('bg-skins-grid');
 
     const menuBtn = document.getElementById('menu-btn');
     const menuModal = document.getElementById('menu-modal');
@@ -527,17 +536,18 @@
     const confirmYes = document.getElementById('confirm-yes');
     const confirmNo = document.getElementById('confirm-no');
 
-    // Состояние темы, счёта и скинов
+    // Состояние темы, счёта и кастомизации
     let currentTheme = localStorage.getItem('plinko_v1_theme') || 'dark';
     let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
-    let selectedBallColor = localStorage.getItem('plinko_ball_color') || '#ff0000'; // По умолчанию красный как на фото
+    let selectedBallColor = localStorage.getItem('plinko_ball_color') || '#ff0000';
+    let selectedBgIndex = parseInt(localStorage.getItem('plinko_bg_index') || '0', 10);
 
     let displayedScore = score;
     let bannerTimeout = null;
     let comingSoonClicks = 0;
     let lastSpawnTime = 0;
 
-    // 7 цветов радуги
+    // 7 Основных цветов (Радуга)
     const RAINBOW_COLORS = [
       '#ff0000', // Красный
       '#ff8800', // Оранжевый
@@ -548,11 +558,23 @@
       '#8e24aa'  // Фиолетовый
     ];
 
-    scoreEl.innerText = Math.round(displayedScore);
+    // Цвета фонов игрового поля для [Тёмной темы, Светлой темы]
+    const BG_THEME_PAIRS = [
+      ['#18222d', '#ffffff'], // Стандартный (Темно-синий / Белый)
+      ['#2d1818', '#ffebee'], // Красный оттенок
+      ['#2d2218', '#fff3e0'], // Оранжевый оттенок
+      ['#2c2d18', '#fffde7'], // Жёлтый оттенок
+      ['#182d1c', '#e8f5e9'], // Зелёный оттенок
+      ['#182a2d', '#e0f7fa'], // Голубой оттенок
+      ['#27182d', '#f3e5f5']  // Фиолетовый оттенок
+    ];
 
-    // Рендер кнопок выбора скина
+    scoreEl.innerText = Math.round(displayedScore) + '$';
+
+    // Отрисовка кнопок выбора скинов
     function renderSkinOptions() {
-      skinsGrid.innerHTML = '';
+      // 1. Цвета шариков
+      ballSkinsGrid.innerHTML = '';
       RAINBOW_COLORS.forEach(color => {
         const item = document.createElement('div');
         item.className = 'skin-item' + (color === selectedBallColor ? ' selected' : '');
@@ -562,26 +584,49 @@
           localStorage.setItem('plinko_ball_color', color);
           renderSkinOptions();
         });
-        skinsGrid.appendChild(item);
+        ballSkinsGrid.appendChild(item);
+      });
+
+      // 2. Цвета фонов
+      bgSkinsGrid.innerHTML = '';
+      BG_THEME_PAIRS.forEach((pair, idx) => {
+        const item = document.createElement('div');
+        item.className = 'skin-item' + (idx === selectedBgIndex ? ' selected' : '');
+        // Показываем превью цвета в зависимости от текущей темы
+        item.style.backgroundColor = currentTheme === 'light' ? pair[1] : pair[0];
+        item.style.border = idx === selectedBgIndex ? '3px solid #ffffff' : '1px solid rgba(255,255,255,0.2)';
+        item.addEventListener('click', () => {
+          selectedBgIndex = idx;
+          localStorage.setItem('plinko_bg_index', idx.toString());
+          renderSkinOptions();
+          updateCanvasBackground();
+        });
+        bgSkinsGrid.appendChild(item);
       });
     }
 
-    // СЛЕГКА УВЕЛИЧЕННЫЕ РАЗМЕРЫ (Немного больше)
+    // Обновление цвета фона холста Canvas
+    function updateCanvasBackground() {
+      const isLight = currentTheme === 'light';
+      const bgPair = BG_THEME_PAIRS[selectedBgIndex] || BG_THEME_PAIRS[0];
+      canvas.style.background = isLight ? bgPair[1] : bgPair[0];
+    }
+
+    // РАЗМЕРЫ И ФИЗИКА (Исправлен баг с крайними колышками)
     const ROWS = 7;
-    const PEG_RADIUS = 5;      // Было 4 -> Стало 5
-    const BALL_RADIUS = 10;     // Было 7.5 -> Стало 10
+    const PEG_RADIUS = 5;
+    const BALL_RADIUS = 10;
     const GRAVITY = 0.25;
     const RESTITUTION = 0.48;
 
-    // Множители и цвета для секций [0, 1, 2, 3, 2, 1, 0]
     const MULTIPLIERS = [0, 1, 2, 3, 2, 1, 0];
     const COLORS = ['#546e7a', '#2ea6ff', '#ff9800', '#e91e63', '#ff9800', '#2ea6ff', '#546e7a'];
 
-    // Генерация колышков
+    // Генерация колышков (Смещение внутрь, чтобы не застревали)
     const pegs = [];
     const startY = 85;
     const rowSpacing = 52;
-    const colSpacing = 40;
+    const colSpacing = 36; // Было 40, уменьшено до 36 для комфортного отступа от краев
 
     for (let r = 0; r < ROWS; r++) {
       const count = r + 3;
@@ -607,6 +652,7 @@
         themeLightBtn.classList.remove('active');
         themeDarkBtn.classList.add('active');
       }
+      updateCanvasBackground();
     }
 
     // Обновление счета
@@ -615,7 +661,7 @@
       localStorage.setItem('plinko_v2_score', score.toString());
     }
 
-    // Показ плавной красной плашки ошибки
+    // Показ плашки ошибки
     function showNoScoreBanner() {
       noScoreBanner.classList.add('show');
       if (bannerTimeout) clearTimeout(bannerTimeout);
@@ -629,7 +675,7 @@
       popups.push({
         x: x,
         y: y,
-        text: '+' + points,
+        text: '+' + points + '$',
         color: color,
         alpha: 1.0,
         scale: 1.2
@@ -639,9 +685,7 @@
     // Спавн шарика
     function spawnBall(customX) {
       const now = Date.now();
-      if (now - lastSpawnTime < 100) {
-        return; // Задержка 100 мс между спавнами
-      }
+      if (now - lastSpawnTime < 100) return;
 
       if (score < 10) {
         showNoScoreBanner();
@@ -670,14 +714,14 @@
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
     }
 
-    // Обновление физики и анимаций
+    // Обновление физики
     function update() {
       if (Math.abs(displayedScore - score) > 0.1) {
         displayedScore += (score - displayedScore) * 0.12;
-        scoreEl.innerText = Math.round(displayedScore);
+        scoreEl.innerText = Math.round(displayedScore) + '$';
       } else if (displayedScore !== score) {
         displayedScore = score;
-        scoreEl.innerText = score;
+        scoreEl.innerText = score + '$';
       }
 
       for (let i = popups.length - 1; i >= 0; i--) {
@@ -689,7 +733,7 @@
         if (p.alpha <= 0) popups.splice(i, 1);
       }
 
-      // Обновление позиций шаров и коллизии с препятствиями
+      // Обновление позиций шаров и коллизии
       for (let i = balls.length - 1; i >= 0; i--) {
         const b = balls[i];
         b.vy += GRAVITY;
@@ -802,24 +846,23 @@
         ctx.fillText('x' + m, x + slotWidth / 2, y + 24);
       }
 
-      // Отрисовка идеальных реалистичных 3D-шариков (как на фото)
+      // Отрисовка 3D-шариков
       for (let i = 0; i < balls.length; i++) {
         const b = balls[i];
 
-        // 1. Мягкая объёмная тень под шариком
+        // Тень
         ctx.save();
         ctx.beginPath();
         ctx.arc(b.x + 2, b.y + 3, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.fill();
         ctx.restore();
 
-        // 2. Основная сферическая заливка с глянцевым затемнением книзу
+        // Градиент
         ctx.save();
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
 
-        // Градиент от центра со смещением влево-вверх
         const grad = ctx.createRadialGradient(
           b.x - BALL_RADIUS * 0.25,
           b.y - BALL_RADIUS * 0.25,
@@ -831,12 +874,12 @@
 
         grad.addColorStop(0, b.color);
         grad.addColorStop(0.7, b.color);
-        grad.addColorStop(1, '#000000'); // Затемнение краев шарa
+        grad.addColorStop(1, '#000000');
 
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // 3. Яркий белый овальный блик в верхней левой части (как на фото)
+        // Блик
         ctx.beginPath();
         ctx.ellipse(
           b.x - BALL_RADIUS * 0.3,
@@ -853,6 +896,7 @@
         ctx.restore();
       }
 
+      // Очки
       for (let i = 0; i < popups.length; i++) {
         const p = popups[i];
         ctx.save();
@@ -881,29 +925,22 @@
       spawnBall(clickX);
     });
 
-    // Настройки
-    settingsBtn.addEventListener('click', () => {
-      settingsModal.style.display = 'flex';
-    });
+    // Окна
+    settingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
     closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
 
-    // Скины
     skinsBtn.addEventListener('click', () => {
       renderSkinOptions();
       skinsModal.style.display = 'flex';
     });
     closeSkins.addEventListener('click', () => skinsModal.style.display = 'none');
 
-    // Меню
-    menuBtn.addEventListener('click', () => {
-      menuModal.style.display = 'flex';
-    });
+    menuBtn.addEventListener('click', () => menuModal.style.display = 'flex');
     closeMenu.addEventListener('click', () => {
       menuModal.style.display = 'none';
       comingSoonClicks = 0;
     });
 
-    // Пасхалка по 5 кликам
     comingSoonText.addEventListener('click', () => {
       comingSoonClicks++;
       if (comingSoonClicks >= 5) {
@@ -913,9 +950,7 @@
       }
     });
 
-    closeEasterEgg.addEventListener('click', () => {
-      easterEggModal.style.display = 'none';
-    });
+    closeEasterEgg.addEventListener('click', () => easterEggModal.style.display = 'none');
 
     themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
     themeLightBtn.addEventListener('click', () => applyTheme('light'));
