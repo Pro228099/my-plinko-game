@@ -17,7 +17,21 @@
       justify-content: center;
       min-height: 100vh;
       overflow: hidden;
+      position: relative;
     }
+
+    /* === ВЕРСИЯ ПРИЛОЖЕНИЯ === */
+    .app-version {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      font-family: monospace;
+      pointer-events: none;
+      user-select: none;
+    }
+
     #score-board {
       font-size: 20px;
       margin-bottom: 10px;
@@ -78,6 +92,8 @@
 </head>
 <body>
 
+  <div class="app-version">v1.0.6</div>
+
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
   <div class="hint">Нажми на верхнюю область, чтобы сбросить шарик</div>
@@ -92,37 +108,56 @@
     const scoreBoardEl = document.getElementById('score-board');
 
     let score = 100;
+    let saveTimeout = null;
 
-    // --- ФУНКЦИИ РАБОТЫ С СОХРАНЕНИЯМИ (Telegram Cloud Storage) ---
+    // --- УБОЙНАЯ СИСТЕМА СОХРАНЕНИЯ ---
     function loadScore() {
+      // 1. Сначала мгновенно читаем локальный кэш
+      const localSaved = localStorage.getItem('plinko_score');
+      if (localSaved !== null) {
+        score = parseInt(localSaved, 10);
+        scoreEl.innerText = score;
+      }
+
+      // 2. Затем запрашиваем актуальный счёт из Telegram Cloud
       if (tg?.CloudStorage) {
         tg.CloudStorage.getItem('plinko_score', (err, value) => {
-          if (!err && value) {
+          if (!err && value !== null && value !== undefined) {
             score = parseInt(value, 10);
             scoreEl.innerText = score;
+            localStorage.setItem('plinko_score', score.toString());
           }
         });
-      } else {
-        // Запасной вариант через браузер (если запуск вне Telegram)
-        const saved = localStorage.getItem('plinko_score');
-        if (saved) {
-          score = parseInt(saved, 10);
-          scoreEl.innerText = score;
-        }
       }
     }
 
     function saveScore() {
+      // Всегда мгновенно сохраняем локально
+      localStorage.setItem('plinko_score', score.toString());
+
+      // Сохраняем в Telegram Cloud Storage с задержкой (чтобы не превышать лимиты)
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(forceSaveCloud, 500);
+    }
+
+    function forceSaveCloud() {
       if (tg?.CloudStorage) {
-        tg.CloudStorage.setItem('plinko_score', score.toString());
-      } else {
-        localStorage.setItem('plinko_score', score.toString());
+        tg.CloudStorage.setItem('plinko_score', score.toString(), (err, stored) => {
+          if (err) console.error('Ошибка сохранения в CloudStorage:', err);
+        });
       }
     }
 
+    // Сохраняем при сворачивании/закрытии приложения
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        forceSaveCloud();
+      }
+    });
+
     // Загружаем сохранённый счёт при старте
     loadScore();
-    // -------------------------------------------------------------
+    // ------------------------------------
 
     // Настройки сетки и физики
     const ROWS = 7;
@@ -157,7 +192,7 @@
       if (clickY < 60 && score >= 10) {
         score -= 10;
         scoreEl.innerText = score;
-        saveScore(); // Сохраняем списывание очков
+        saveScore();
 
         balls.push({
           x: clickX,
@@ -229,7 +264,7 @@
           
           score += gained;
           scoreEl.innerText = score;
-          saveScore(); // Сохраняем начисление очков
+          saveScore();
 
           const rect = canvas.getBoundingClientRect();
           const slotWidth = canvas.width / MULTIPLIERS.length;
