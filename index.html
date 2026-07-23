@@ -61,7 +61,6 @@
       background: #ffffff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.06);
     }
-    body.light-theme .version-tag { color: #555555; }
     body.light-theme canvas {
       background: #ffffff;
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
@@ -79,12 +78,28 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       padding: 8px 12px;
       background: #1c2733;
       border-radius: 12px;
       transition: background 0.3s ease;
     }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .icon-btn:active { transform: scale(0.9); }
 
     /* НЕОНОВАЯ КНОПКА НАСТРОЕК */
     .icon-btn-neon {
@@ -114,10 +129,39 @@
       transition: color 0.2s;
     }
 
-    .version-tag {
-      font-size: 11px;
-      color: #708499;
-      font-family: monospace;
+    /* === ПЛАВНОЕ УВЕДОМЛЕНИЕ (ОШИБКА СЧЁТА) === */
+    .banner-error {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(229, 57, 53, 0.95);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 14px rgba(229, 57, 53, 0.4);
+      
+      /* Плавные анимации появления */
+      opacity: 0;
+      transform: translateY(-10px);
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .banner-error.show {
+      opacity: 1;
+      transform: translateY(0);
+      max-height: 50px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     /* === CANVAS === */
@@ -140,14 +184,6 @@
       transition: background 0.3s ease, border-color 0.3s ease;
     }
 
-    /* === КНОПКИ === */
-    .controls {
-      width: 100%;
-      max-width: 360px;
-      margin-top: 12px;
-      display: flex;
-    }
-
     .btn {
       width: 100%;
       padding: 13px;
@@ -168,8 +204,8 @@
     .btn-secondary { background: #546e7a; }
 
     .hint {
-      margin-top: 10px;
-      font-size: 12px;
+      margin-top: 12px;
+      font-size: 13px;
       color: #708499;
       text-align: center;
     }
@@ -279,21 +315,33 @@
 </head>
 <body>
 
+  <!-- ШАПКА ИГРЫ -->
   <div class="header">
     <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
-    <div class="version-tag">v1.2.0</div>
+    <button id="menu-btn" class="icon-btn" title="Меню">☰</button>
   </div>
 
+  <!-- ВСПЛЫВАЮЩАЯ ПЛАШКА ОШИБКИ -->
+  <div id="no-score-banner" class="banner-error">
+    У вас нет счёта, сбросьте в настройках
+  </div>
+
+  <!-- ИГРОВОЕ ПОЛЕ -->
   <div class="canvas-container">
     <canvas id="gameCanvas" width="360" height="520"></canvas>
   </div>
 
-  <div class="controls">
-    <button id="drop-btn" class="btn">Бросить шарик (-10)</button>
-  </div>
+  <div class="hint">Нажмите на поле, чтобы запустить шар (-10)</div>
 
-  <div class="hint">Нажми на поле или кнопку, чтобы запустить шар</div>
+  <!-- Модальное окно "Меню" (Coming Soon) -->
+  <div id="menu-modal" class="modal-overlay">
+    <div class="modal-box" style="border: 1px solid rgba(255,255,255,0.1); animation: none;">
+      <button id="close-menu" class="close-btn">&times;</button>
+      <div class="modal-title">☰ Меню</div>
+      <div style="font-size: 15px; color: #708499; margin: 25px 0;">Coming soon...</div>
+    </div>
+  </div>
 
   <!-- Модальное окно настроек -->
   <div id="settings-modal" class="modal-overlay">
@@ -340,10 +388,15 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
+    const noScoreBanner = document.getElementById('no-score-banner');
 
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettings = document.getElementById('close-settings');
+
+    const menuBtn = document.getElementById('menu-btn');
+    const menuModal = document.getElementById('menu-modal');
+    const closeMenu = document.getElementById('close-menu');
 
     const themeDarkBtn = document.getElementById('theme-dark-btn');
     const themeLightBtn = document.getElementById('theme-light-btn');
@@ -357,6 +410,8 @@
     let currentTheme = localStorage.getItem('plinko_v1_theme') || 'dark';
     let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
     let displayedScore = score;
+    let bannerTimeout = null;
+
     scoreEl.innerText = Math.round(displayedScore);
 
     // Константы физики
@@ -407,6 +462,15 @@
       localStorage.setItem('plinko_v2_score', score.toString());
     }
 
+    // Показ плавной красной плашки ошибки
+    function showNoScoreBanner() {
+      noScoreBanner.classList.add('show');
+      if (bannerTimeout) clearTimeout(bannerTimeout);
+      bannerTimeout = setTimeout(() => {
+        noScoreBanner.classList.remove('show');
+      }, 2500);
+    }
+
     // Всплывающие очки
     function addPopup(x, y, points, color) {
       popups.push({
@@ -422,7 +486,7 @@
     // Спавн шарика
     function spawnBall(customX) {
       if (score < 10) {
-        alert("Недостаточно очков! Сбросьте счёт в настройках.");
+        showNoScoreBanner();
         return;
       }
       updateScore(-10);
@@ -572,13 +636,17 @@
       spawnBall(clickX);
     });
 
-    document.getElementById('drop-btn').addEventListener('click', () => spawnBall());
-
     // Настройки
     settingsBtn.addEventListener('click', () => {
       settingsModal.style.display = 'flex';
     });
     closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
+
+    // Меню
+    menuBtn.addEventListener('click', () => {
+      menuModal.style.display = 'flex';
+    });
+    closeMenu.addEventListener('click', () => menuModal.style.display = 'none');
 
     themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
     themeLightBtn.addEventListener('click', () => applyTheme('light'));
