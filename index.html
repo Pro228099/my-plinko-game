@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -557,8 +556,8 @@
     // Спавн шарика
     function spawnBall(customX) {
       const now = Date.now();
-      if (now - lastSpawnTime < 300) {
-        return; // Задержка 300 мс между спавнами
+      if (now - lastSpawnTime < 200) {
+        return; // Задержка 200 мс между спавнами
       }
 
       if (score < 10) {
@@ -638,7 +637,7 @@
         }
       }
 
-      // Коллизии между шариками (не сквозные шары)
+      // Коллизии между шариками
       for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
           const b1 = balls[i];
@@ -803,3 +802,4 @@
   </script>
 </body>
 </html>
+
