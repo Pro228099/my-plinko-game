@@ -312,7 +312,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.12</div>
+  <div class="app-version">v1.0.13</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -391,11 +391,23 @@
   </div>
 
   <script>
+    // БЕЗОПАСНАЯ РАБОТА С ХРАНИЛИЩЕМ (Не падает, если Telegram блокирует localStorage)
+    const safeStorage = {
+      getItem: (key) => {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      },
+      setItem: (key, value) => {
+        try { localStorage.setItem(key, value); } catch (e) {}
+      }
+    };
+
     // 0. ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      tg.ready();
-      if (tg.expand) tg.expand();
+      try {
+        if (tg.ready) tg.ready();
+        if (tg.expand) tg.expand();
+      } catch (e) {}
     }
 
     // 1. DOM ЭЛЕМЕНТЫ
@@ -431,7 +443,7 @@
     // 2. СОСТОЯНИЕ И КОНСТАНТЫ ФИЗИКИ
     let score = 100;
     let saveTimeout = null;
-    let currentTheme = localStorage.getItem('plinko_theme') || 'dark';
+    let currentTheme = safeStorage.getItem('plinko_theme') || 'dark';
 
     const ROWS = 7;
     const PEG_RADIUS = 4;
@@ -461,7 +473,7 @@
     // 3. ФУНКЦИИ ИГРЫ
     const applyTheme = (theme) => {
       currentTheme = theme;
-      localStorage.setItem('plinko_theme', theme);
+      safeStorage.setItem('plinko_theme', theme);
       if (theme === 'light') {
         document.body.classList.add('light-theme');
         themeDarkBtn.classList.remove('active');
@@ -480,7 +492,7 @@
     };
 
     const loadScore = () => {
-      const localSaved = localStorage.getItem('plinko_score');
+      const localSaved = safeStorage.getItem('plinko_score');
       if (localSaved !== null) {
         score = parseInt(localSaved, 10);
         scoreEl.innerText = score;
@@ -492,12 +504,11 @@
             if (!err && value) {
               score = parseInt(value, 10);
               scoreEl.innerText = score;
-              localStorage.setItem('plinko_score', score.toString());
+              safeStorage.setItem('plinko_score', score.toString());
             }
             checkGameOver();
           });
         } catch (e) {
-          console.warn('CloudStorage недоступен:', e);
           checkGameOver();
         }
       } else {
@@ -516,7 +527,7 @@
     };
 
     const saveScore = () => {
-      localStorage.setItem('plinko_score', score.toString());
+      safeStorage.setItem('plinko_score', score.toString());
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(forceSaveCloud, 500);
     };
@@ -537,7 +548,7 @@
           feedbackText.value = '';
           alert("Отзыв отправлен!");
         } catch (err) {
-          alert("Отправка через sendData доступна только при запуске с клавиатуры Telegram!");
+          alert("Отправка доступна при запуске с клавиатуры Telegram!");
         }
       } else {
         alert("Отправка работает внутри открытого Telegram WebApp!");
@@ -670,10 +681,4 @@
     closeFeedback.addEventListener('click', () => { feedbackModal.style.display = 'none'; });
     sendFeedbackBtn.addEventListener('click', sendFeedback);
 
-    openConfirmReset.addEventListener('click', () => { confirmModal.style.display = 'flex'; });
-    confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; });
-    confirmYes.addEventListener('click', () => {
-      score = 100;
-      scoreEl.innerText = score;
-      saveScore();
-      forceSaveClo
+    openConfirmR
