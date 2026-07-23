@@ -1,6 +1,6 @@
+
 import os
 import sys
-import json
 import subprocess
 import telebot
 from telebot.types import (
@@ -45,6 +45,8 @@ bot = telebot.TeleBot(BOT_TOKEN)
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     inline_markup = InlineKeyboardMarkup()
+    
+    # 1. Кнопка игры
     inline_markup.add(
         InlineKeyboardButton(
             text="Играть в Plinko 🎲", 
@@ -52,39 +54,75 @@ def send_welcome(message):
         )
     )
     
+    # 2. Кнопка отзыва
+    inline_markup.add(
+        InlineKeyboardButton(
+            text="💡 Идея / Сообщить о баге", 
+            callback_data="start_feedback"
+        )
+    )
+    
     bot.reply_to(
         message, 
-        "Привет! Нажми на кнопку ниже, чтобы запустить игру прямо в Telegram:", 
+        "Привет! Нажми на кнопку ниже, чтобы запустить игру или высказать свою идею:", 
         reply_markup=inline_markup
     )
 
-# --- ОБРАБОТКА ДАННЫХ ИЗ WEB APP (ОТЗЫВЫ И ИДЕИ) ---
-@bot.message_handler(content_types=['web_app_data'])
-def handle_web_app_data(message):
-    try:
-        # Распаковываем данные от клиента
-        payload = json.loads(message.web_app_data.data)
-        
-        if payload.get('action') == 'feedback':
-            user_text = payload.get('text', '')
-            user = message.from_user
-            
-            # Формируем красивое имя пользователя
-            user_info = f"@{user.username}" if user.username else f"{user.first_name} (ID: {user.id})"
-            
-            msg = f"💡 <b>Новый отзыв / идея!</b>\n\n<b>От:</b> {user_info}\n<b>Текст:</b> {user_text}"
-            
-            # Пересылаем отзыв админу
-            if ADMIN_CHAT_ID:
-                bot.send_message(ADMIN_CHAT_ID, msg, parse_mode='HTML')
-                bot.reply_to(message, "Спасибо! Ваш отзыв успешно отправлен разработчику. 👍")
-            else:
-                print("ОШИБКА: ADMIN_CHAT_ID не настроен в .env!")
-                
-    except Exception as e:
-        print(f"Ошибка обработки WebApp Data: {e}")
+# --- НАЖАТИЕ НА ИНЛАЙН-КНОПКУ ОТЗЫВА ---
+@bot.callback_query_handler(func=lambda call: call.data == "start_feedback")
+def callback_feedback(call):
+    bot.answer_callback_query(call.id)
+    msg = bot.send_message(
+        call.message.chat.id, 
+        "✍️ **Напиши свою идею или описание бага одним сообщением:**\n\n"
+        "(Или отправь /cancel для отмены)",
+        parse_mode='Markdown'
+    )
+    bot.register_next_step_handler(msg, process_feedback_step)
+
+# --- КОМАНДА /feedback ИЛИ /bug ИЗ ТЕКСТА ---
+@bot.message_handler(commands=['feedback', 'bug'])
+def start_feedback_cmd(message):
+    msg = bot.reply_to(
+        message, 
+        "✍️ **Напиши свою идею или описание бага одним сообщением:**\n\n"
+        "(Или отправь /cancel для отмены)",
+        parse_mode='Markdown'
+    )
+    bot.register_next_step_handler(msg, process_feedback_step)
+
+# --- ОБРАБОТКА И ОТПРАВКА ТЕКСТА ОТЗЫВА ---
+def process_feedback_step(message):
+    if message.text and message.text.strip() == '/cancel':
+        bot.reply_to(message, "Отправка отзыва отменена.")
+        return
+
+    if not message.text:
+        bot.reply_to(message, "Пожалуйста, отправь именно текст. Попробуй снова через кнопку или команду /feedback")
+        return
+
+    user_text = message.text.strip()
+    user = message.from_user
+    
+    user_info = f"@{user.username}" if user.username else f"{user.first_name} (ID: <code>{user.id}</code>)"
+    
+    msg_for_admin = (
+        f"💡 <b>Новый отзыв / идея!</b>\n\n"
+        f"<b>От:</b> {user_info}\n"
+        f"<b>Текст:</b>\n{user_text}"
+    )
+
+    if ADMIN_CHAT_ID:
+        try:
+            bot.send_message(ADMIN_CHAT_ID, msg_for_admin, parse_mode='HTML')
+            bot.reply_to(message, "Спасибо! Твой отзыв успешно передан разработчику. 👍")
+        except Exception as e:
+            print(f"Ошибка при отправке админу: {e}")
+            bot.reply_to(message, "Произошла ошибка при отправке. Попробуй позже.")
+    else:
+        print("ОШИБКА: ADMIN_CHAT_ID не настроен в .env!")
+        bot.reply_to(message, "Ошибка настройки сервера.")
 
 if __name__ == '__main__':
     print("Бот успешно запущен!")
     bot.infinity_polling()
-    
