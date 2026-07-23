@@ -42,6 +42,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 DONATE_TEXT = (
     "поддержать автора вы можете тут(это врядли будет использоваться для улучшения бота):\n\n"
+    "DonationAlerts: https://www.donationalerts.com/r/pro228099\n\n"
     "Звёзды: @pro228099\n\n"
     "Gram: <code>UQBBCz5GV1jVxS2SKqZWcVHrJCUVopBxT4yh_CohgE0rHyUw</code>\n\n"
     "Litecoin (сеть LTC): <code>ltc1q2t30s3yvtllg3mhhgn3djt97l6as67llknt2xr</code>\n\n"
