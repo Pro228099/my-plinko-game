@@ -23,8 +23,32 @@
       justify-content: flex-start;
       min-height: 100vh;
       padding: 12px;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
+    /* === СВЕТЛАЯ ТЕМА === */
+    body.light-theme {
+      background-color: #eef2f5;
+      color: #111111;
+    }
+    body.light-theme .header {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    body.light-theme .version-tag { color: #555555; }
+    body.light-theme canvas {
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme .modal-box {
+      background: #ffffff;
+      color: #111111;
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme .icon-btn { color: #111111; }
+
+    /* === ШАПКА === */
     .header {
       width: 100%;
       max-width: 360px;
@@ -35,7 +59,20 @@
       padding: 8px 12px;
       background: #1c2733;
       border-radius: 12px;
+      transition: background 0.3s ease;
     }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #ffffff;
+      padding: 4px;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+    .icon-btn:active { transform: scale(0.9) rotate(45deg); }
 
     .score-container {
       font-size: 16px;
@@ -53,6 +90,7 @@
       font-family: monospace;
     }
 
+    /* === CANVAS === */
     .canvas-container {
       width: 100%;
       max-width: 360px;
@@ -69,38 +107,35 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.08);
       touch-action: none;
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
 
+    /* === КНОПКИ === */
     .controls {
       width: 100%;
       max-width: 360px;
       margin-top: 12px;
       display: flex;
-      gap: 10px;
     }
 
     .btn {
-      flex: 1;
-      padding: 12px;
+      width: 100%;
+      padding: 13px;
       border: none;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
       color: #fff;
       background: #2ea6ff;
       transition: opacity 0.2s, transform 0.1s;
     }
-
     .btn:active {
       transform: scale(0.97);
       opacity: 0.9;
     }
-
-    .btn-reset {
-      background: #e53935;
-      flex: 0.4;
-    }
+    .btn-danger { background: #e53935; }
+    .btn-secondary { background: #546e7a; }
 
     .hint {
       margin-top: 10px;
@@ -108,13 +143,116 @@
       color: #708499;
       text-align: center;
     }
+
+    /* === МОДАЛЬНЫЕ ОКНА === */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+      position: relative;
+      background: #1c2733;
+      padding: 22px 18px;
+      border-radius: 16px;
+      width: 88%;
+      max-width: 310px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #708499;
+      cursor: pointer;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    .theme-toggle {
+      display: flex;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .theme-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: #708499;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .theme-btn.active {
+      background: #2ea6ff;
+      color: #ffffff;
+    }
+
+    .danger-zone {
+      margin-top: 10px;
+      padding: 12px;
+      background: rgba(229, 57, 53, 0.1);
+      border: 1px solid rgba(229, 57, 53, 0.4);
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .danger-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #ef5350;
+      margin-bottom: 8px;
+    }
+
+    .modal-buttons-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
 
   <div class="header">
+    <button id="settings-btn" class="icon-btn" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
-    <div class="version-tag">v2.1.0</div>
+    <div class="version-tag">v1.1.0</div>
   </div>
 
   <div class="canvas-container">
@@ -123,23 +261,67 @@
 
   <div class="controls">
     <button id="drop-btn" class="btn">Бросить шарик (-10)</button>
-    <button id="reset-btn" class="btn btn-reset">Сброс</button>
   </div>
 
   <div class="hint">Нажми на поле или кнопку, чтобы запустить шар</div>
 
+  <!-- Модальное окно настроек -->
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal-box">
+      <button id="close-settings" class="close-btn">&times;</button>
+      <div class="modal-title">⚙️ Настройки</div>
+
+      <div class="setting-item">
+        <span>Тема оформления:</span>
+        <div class="theme-toggle">
+          <button id="theme-dark-btn" class="theme-btn active">🌙 Тёмная</button>
+          <button id="theme-light-btn" class="theme-btn">☀️ Светлая</button>
+        </div>
+      </div>
+
+      <div class="danger-zone">
+        <div class="danger-title">❗ Опасная зона</div>
+        <button id="open-confirm-btn" class="btn btn-danger" style="padding: 9px; font-size: 13px;">Сбросить счёт</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подтверждение сброса -->
+  <div id="confirm-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="font-size: 15px; margin-bottom: 15px;">Точно сбросить счёт до 100?</div>
+      <div class="modal-buttons-row">
+        <button id="confirm-yes" class="btn btn-danger" style="padding: 10px;">Да</button>
+        <button id="confirm-no" class="btn btn-secondary" style="padding: 10px;">Отмена</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Инициализация Canvas
+    // Canvas & UI
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
 
-    // Состояние игры и плавного счета
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+
+    const themeDarkBtn = document.getElementById('theme-dark-btn');
+    const themeLightBtn = document.getElementById('theme-light-btn');
+
+    const openConfirmBtn = document.getElementById('open-confirm-btn');
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmYes = document.getElementById('confirm-yes');
+    const confirmNo = document.getElementById('confirm-no');
+
+    // Состояние темы и счёта
+    let currentTheme = localStorage.getItem('plinko_v1_theme') || 'dark';
     let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
     let displayedScore = score;
     scoreEl.innerText = Math.round(displayedScore);
 
-    // Константы
+    // Константы физики
     const ROWS = 7;
     const PEG_RADIUS = 4;
     const BALL_RADIUS = 7;
@@ -163,17 +345,31 @@
       }
     }
 
-    // Динамические массивы
     const balls = [];
     const popups = [];
 
-    // Обновление реального счета
+    // Применение темы
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('plinko_v1_theme', theme);
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        themeDarkBtn.classList.remove('active');
+        themeLightBtn.classList.add('active');
+      } else {
+        document.body.classList.remove('light-theme');
+        themeLightBtn.classList.remove('active');
+        themeDarkBtn.classList.add('active');
+      }
+    }
+
+    // Обновление счета
     function updateScore(delta) {
       score += delta;
       localStorage.setItem('plinko_v2_score', score.toString());
     }
 
-    // Добавление всплывающего текста очков
+    // Всплывающие очки
     function addPopup(x, y, points, color) {
       popups.push({
         x: x,
@@ -188,7 +384,7 @@
     // Спавн шарика
     function spawnBall(customX) {
       if (score < 10) {
-        alert("Недостаточно очков! Нажмите 'Сброс'.");
+        alert("Недостаточно очков! Сбросьте счёт в настройках.");
         return;
       }
       updateScore(-10);
@@ -205,7 +401,6 @@
       });
     }
 
-    // Расчет индекса слота
     function getSlotIndex(x) {
       const slotWidth = canvas.width / MULTIPLIERS.length;
       const idx = Math.floor(x / slotWidth);
@@ -214,7 +409,6 @@
 
     // Обновление физики и анимаций
     function update() {
-      // 1. Плавный анимационный счетчик
       if (Math.abs(displayedScore - score) > 0.1) {
         displayedScore += (score - displayedScore) * 0.12;
         scoreEl.innerText = Math.round(displayedScore);
@@ -223,36 +417,24 @@
         scoreEl.innerText = score;
       }
 
-      // 2. Анимация всплывающих текстов очков
       for (let i = popups.length - 1; i >= 0; i--) {
         const p = popups[i];
         p.y -= 1.2;
         p.alpha -= 0.025;
         if (p.scale > 1.0) p.scale -= 0.015;
 
-        if (p.alpha <= 0) {
-          popups.splice(i, 1);
-        }
+        if (p.alpha <= 0) popups.splice(i, 1);
       }
 
-      // 3. Физика шариков
       for (let i = balls.length - 1; i >= 0; i--) {
         const b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
 
-        // Отскоки от стенок
-        if (b.x - BALL_RADIUS < 0) {
-          b.x = BALL_RADIUS;
-          b.vx *= -RESTITUTION;
-        }
-        if (b.x + BALL_RADIUS > canvas.width) {
-          b.x = canvas.width - BALL_RADIUS;
-          b.vx *= -RESTITUTION;
-        }
+        if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
+        if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
-        // Столкновение с колышками
         for (let j = 0; j < pegs.length; j++) {
           const p = pegs[j];
           const dx = b.x - p.x;
@@ -272,7 +454,6 @@
           }
         }
 
-        // Попадание в нижнюю лузу
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
           const slotIdx = getSlotIndex(b.x);
           const mult = MULTIPLIERS[slotIdx];
@@ -280,24 +461,22 @@
 
           updateScore(gained);
 
-          // Спавним анимацию очков
           const slotWidth = canvas.width / MULTIPLIERS.length;
           const popupX = (slotIdx + 0.5) * slotWidth;
           const popupY = canvas.height - 45;
 
           addPopup(popupX, popupY, gained, COLORS[slotIdx]);
-
           balls.splice(i, 1);
         }
       }
     }
 
-    // Отрисовка кадров
+    // Отрисовка
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Отрисовка колышков
-      ctx.fillStyle = '#ffffff';
+      // Колышки меняют цвет от темы
+      ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
       for (let i = 0; i < pegs.length; i++) {
         const p = pegs[i];
         ctx.beginPath();
@@ -305,7 +484,7 @@
         ctx.fill();
       }
 
-      // 2. Отрисовка мультипликаторов снизу
+      // Слоты
       const slotWidth = canvas.width / MULTIPLIERS.length;
       for (let k = 0; k < MULTIPLIERS.length; k++) {
         const m = MULTIPLIERS[k];
@@ -321,7 +500,7 @@
         ctx.fillText('x' + m, x + slotWidth / 2, y + 24);
       }
 
-      // 3. Отрисовка шариков
+      // Шарики
       ctx.fillStyle = '#ffeb3b';
       for (let i = 0; i < balls.length; i++) {
         const b = balls[i];
@@ -330,7 +509,7 @@
         ctx.fill();
       }
 
-      // 4. Отрисовка анимаций всплывающих очков
+      // Всплывающие очки
       for (let i = 0; i < popups.length; i++) {
         const p = popups[i];
         ctx.save();
@@ -345,14 +524,13 @@
       }
     }
 
-    // Основной игровой цикл
     function gameLoop() {
       update();
       draw();
       requestAnimationFrame(gameLoop);
     }
 
-    // Слушатели событий
+    // События
     canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -361,13 +539,25 @@
     });
 
     document.getElementById('drop-btn').addEventListener('click', () => spawnBall());
-    
-    document.getElementById('reset-btn').addEventListener('click', () => {
+
+    // Настройки и Модалки
+    settingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
+    closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
+
+    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
+    themeLightBtn.addEventListener('click', () => applyTheme('light'));
+
+    openConfirmBtn.addEventListener('click', () => confirmModal.style.display = 'flex');
+    confirmNo.addEventListener('click', () => confirmModal.style.display = 'none');
+    confirmYes.addEventListener('click', () => {
       score = 100;
       localStorage.setItem('plinko_v2_score', '100');
+      confirmModal.style.display = 'none';
+      settingsModal.style.display = 'none';
     });
 
-    // Запуск цикла
+    // Инициализация
+    applyTheme(currentTheme);
     gameLoop();
   </script>
 </body>
