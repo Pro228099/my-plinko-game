@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -349,7 +350,7 @@
       <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
     </div>
 
-    <div class="version-tag">v1.2.1</div>
+    <div class="version-tag">v1.2.2</div>
   </div>
 
   <!-- ВСПЛЫВАЮЩАЯ ПЛАШКА ОШИБКИ -->
@@ -450,8 +451,9 @@
     const GRAVITY = 0.25;
     const RESTITUTION = 0.5;
 
-    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
+    // Множители и цвета для секций [0, 1, 2, 3, 2, 1, 0]
+    const MULTIPLIERS = [0, 1, 2, 3, 2, 1, 0];
+    const COLORS = ['#546e7a', '#2ea6ff', '#ff9800', '#e91e63', '#ff9800', '#2ea6ff', '#546e7a'];
 
     // Генерация колышков
     const pegs = [];
@@ -694,4 +696,3 @@
   </script>
 </body>
 </html>
-
