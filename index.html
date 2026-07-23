@@ -146,27 +146,28 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* === ЧЁРНОЕ ОКНО НАСТРОЕК С РАДУЖНОЙ НЕОНОВОЙ РАМКОЙ === */
+    /* === СТРОГО ЧЁРНОЕ ОКНО С ТОНКОЙ НЕОНОВОЙ РАМКОЙ === */
     .rainbow-modal {
       position: relative;
-      background: #000000 !important;
-      color: #ffffff !important;
+      background: #000000;
+      color: #ffffff;
       padding: 24px 20px;
       border-radius: 16px;
       text-align: center;
       max-width: 310px;
       width: 88%;
-      box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
       z-index: 1;
     }
+    /* Тонкая рамка 2px во все стороны */
     .rainbow-modal::before {
       content: '';
       position: absolute;
-      top: -3px; left: -3px; right: -3px; bottom: -3px;
+      inset: -2px;
+      border-radius: 18px;
       background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #00ff00, #00afff, #7a00ff, #ff00c8, #ff0000);
-      border-radius: 19px;
-      z-index: -1;
       background-size: 400%;
+      z-index: -1;
       animation: rainbowGlow 8s linear infinite;
     }
 
@@ -210,7 +211,7 @@
       display: flex;
       width: 100%;
       background: #111111;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       padding: 3px;
       gap: 4px;
@@ -237,7 +238,7 @@
     .danger-zone {
       margin-top: 15px;
       padding: 12px;
-      background: rgba(244, 67, 54, 0.12);
+      background: rgba(244, 67, 54, 0.1);
       border: 1px solid #f44336;
       border-radius: 12px;
       text-align: left;
@@ -340,7 +341,7 @@
     </div>
   </div>
 
-  <!-- Окно настроек с радужным неоном -->
+  <!-- Окно настроек с тонким радужным контуром -->
   <div id="settings-modal" class="modal-overlay">
     <div class="rainbow-modal">
       <button id="close-settings" class="close-btn">&times;</button>
