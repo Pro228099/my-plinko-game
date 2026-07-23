@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import html
 import subprocess
 import telebot
 from telebot.types import (
@@ -18,7 +19,10 @@ def update_code():
         try:
             print("--> Скачиваем свежий код из GitHub...")
             result = subprocess.run(["git", "pull"], capture_output=True, text=True)
-            print(result.stdout)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print("Git Warning/Error:", result.stderr)
             
             print("--> Перезапускаем бота с новым кодом...")
             os.execv(sys.executable, [sys.executable] + sys.argv + ["--updated"])
@@ -34,12 +38,16 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
+if not BOT_TOKEN:
+    print("CRITICAL ERROR: BOT_TOKEN не задан в переменной окружения / .env")
+    sys.exit(1)
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # --- КОМАНДА /start И /help ---
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    # 1. Инлайн-кнопка в сообщении
+    # 1. Инлайн кнопка в сообщении
     inline_markup = InlineKeyboardMarkup()
     inline_markup.add(
         InlineKeyboardButton(
@@ -48,7 +56,7 @@ def send_welcome(message):
         )
     )
     
-    # 2. Кнопка в обычной клавиатуре (нужна, чтобы работал tg.sendData для отзывов)
+    # 2. Кнопка на клавиатуре (нужна для работы tg.sendData)
     reply_markup = ReplyKeyboardMarkup(resize_keyboard=True)
     reply_markup.add(
         KeyboardButton(
@@ -63,14 +71,13 @@ def send_welcome(message):
         reply_markup=inline_markup
     )
     
-    # Дополнительно выводим кнопку внизу экрана
     bot.send_message(
         message.chat.id,
-        "Также кнопка быстрого запуска доступна на вашей клавиатуре 👇",
+        "Также кнопка запуска продублирована на вашей клавиатуре 👇",
         reply_markup=reply_markup
     )
 
-# --- ОБРАБОТКА ДАННЫХ ИЗ WEBAPP (Идея / Баг) ---
+# --- ОБРАБОТКА ДАННЫХ ИЗ WEBAPP ---
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     try:
@@ -79,20 +86,27 @@ def handle_web_app_data(message):
         if data.get("type") == "feedback":
             user = message.from_user
             username = f"@{user.username}" if user.username else user.first_name
-            feedback_text = data.get("text", "")
+            feedback_raw = data.get("text", "")
+            
+            # Экранируем спецсимволы, чтобы Telegram HTML parser не упал
+            safe_username = html.escape(username)
+            safe_text = html.escape(feedback_raw)
 
             report_message = (
-                f"📩 *Новый отзыв/баг из Plinko!*\n\n"
-                f"👤 *От кого:* {username} (ID: `{user.id}`)\n"
-                f"💬 *Сообщение:*\n{feedback_text}"
+                f"<b>📩 Новый отзыв/баг из Plinko!</b>\n\n"
+                f"<b>👤 От кого:</b> {safe_username} (ID: <code>{user.id}</code>)\n"
+                f"<b>💬 Сообщение:</b>\n{safe_text}"
             )
 
             if ADMIN_CHAT_ID:
-                bot.send_message(
-                    chat_id=ADMIN_CHAT_ID,
-                    text=report_message,
-                    parse_mode="Markdown"
-                )
+                try:
+                    bot.send_message(
+                        chat_id=int(ADMIN_CHAT_ID),
+                        text=report_message,
+                        parse_mode="HTML"
+                    )
+                except Exception as send_err:
+                    print(f"Ошибка при отправке сообщения админу: {send_err}")
 
             bot.reply_to(message, "Спасибо! Твой отзыв успешно отправлен разработчику. 🔥")
 
