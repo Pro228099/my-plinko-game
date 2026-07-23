@@ -312,7 +312,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.10</div>
+  <div class="app-version">v1.0.11</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -445,7 +445,7 @@
     const rowSpacing = 45;
     const colSpacing = 38;
 
-    // Сразу генерируем палочки (колышки)
+    // Генерируем колышки
     for (let r = 0; r < ROWS; r++) {
       const count = r + 3;
       const startX = (canvas.width - (count - 1) * colSpacing) / 2;
@@ -521,8 +521,10 @@
 
       if (tg?.sendData) {
         tg.sendData(JSON.stringify(payload));
+        feedbackModal.style.display = 'none';
+        feedbackText.value = '';
       } else {
-        alert("Отправка работает только внутри открытого WebApp в Telegram!");
+        alert("Отправка через sendData доступна при открытии из меню/клавиатуры Telegram.");
       }
     };
 
@@ -675,7 +677,4 @@
       if (score < 10) return;
 
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-
-      score -= 10;
-      scoreEl.innerText =
+      const 
