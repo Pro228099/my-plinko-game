@@ -40,12 +40,13 @@ if not BOT_TOKEN:
     print("CRITICAL ERROR: BOT_TOKEN не задан в переменной окружения / .env")
     sys.exit(1)
 
+print(f"--> Бот инициализирован. ADMIN_CHAT_ID: {ADMIN_CHAT_ID}")
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # --- КОМАНДА /start И /help ---
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    # Единственная инлайн-кнопка под сообщением
     inline_markup = InlineKeyboardMarkup()
     inline_markup.add(
         InlineKeyboardButton(
@@ -64,6 +65,7 @@ def send_welcome(message):
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     try:
+        print("--> Получен web_app_data от пользователя!")
         data = json.loads(message.web_app_data.data)
 
         if data.get("type") == "feedback":
@@ -71,7 +73,6 @@ def handle_web_app_data(message):
             username = f"@{user.username}" if user.username else user.first_name
             feedback_raw = data.get("text", "")
             
-            # Экранируем спецсимволы для безопасной отправки HTML
             safe_username = html.escape(username)
             safe_text = html.escape(feedback_raw)
 
@@ -88,13 +89,16 @@ def handle_web_app_data(message):
                         text=report_message,
                         parse_mode="HTML"
                     )
+                    print(f"--> Отзыв успешно отправлен админу (ID: {ADMIN_CHAT_ID})")
                 except Exception as send_err:
-                    print(f"Ошибка при отправке сообщения админу: {send_err}")
+                    print(f"--> Ошибка при отправке сообщения админу: {send_err}")
+            else:
+                print("--> ОШИБКА: ADMIN_CHAT_ID не установлен в .env!")
 
             bot.reply_to(message, "Спасибо! Твой отзыв успешно отправлен разработчику. 🔥")
 
     except Exception as e:
-        print(f"Ошибка при обработке WebApp Data: {e}")
+        print(f"--> Ошибка при обработке WebApp Data: {e}")
 
 if __name__ == '__main__':
     print("Бот успешно запущен!")
