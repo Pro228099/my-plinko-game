@@ -347,7 +347,7 @@
       margin: 0 auto;
       border: 3px solid transparent;
       transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 3px 6px rgba(255,255,255,0.6);
+      box-shadow: inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.7);
     }
     .skin-item:active {
       transform: scale(0.9);
@@ -355,7 +355,7 @@
     .skin-item.selected {
       border-color: #ffffff;
       transform: scale(1.1);
-      box-shadow: 0 0 12px rgba(255,255,255,0.8), inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 3px 6px rgba(255,255,255,0.6);
+      box-shadow: 0 0 12px rgba(255,255,255,0.8), inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.7);
     }
 
     .danger-zone {
@@ -409,7 +409,7 @@
     </div>
 
     <div class="version-tag">
-      v1.2.5
+      v1.2.6
       <span class="author-tag">by @pro228099</span>
     </div>
   </div>
@@ -530,8 +530,8 @@
     // Состояние темы, счёта и скинов
     let currentTheme = localStorage.getItem('plinko_v1_theme') || 'dark';
     let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
-    let selectedBallColor = localStorage.getItem('plinko_ball_color') || '#ffeb3b'; // Дефолтный жёлтый
-    
+    let selectedBallColor = localStorage.getItem('plinko_ball_color') || '#ff0000'; // По умолчанию красный как на фото
+
     let displayedScore = score;
     let bannerTimeout = null;
     let comingSoonClicks = 0;
@@ -539,13 +539,13 @@
 
     // 7 цветов радуги
     const RAINBOW_COLORS = [
-      '#ff3b30', // Красный
-      '#ff9500', // Оранжевый
+      '#ff0000', // Красный
+      '#ff8800', // Оранжевый
       '#ffeb3b', // Жёлтый
       '#4cd964', // Зелёный
-      '#5ac8fa', // Голубой
-      '#007aff', // Синий
-      '#5856d6'  // Фиолетовый
+      '#00d2ff', // Голубой
+      '#0055ff', // Синий
+      '#8e24aa'  // Фиолетовый
     ];
 
     scoreEl.innerText = Math.round(displayedScore);
@@ -566,12 +566,12 @@
       });
     }
 
-    // Константы физики
+    // СЛЕГКА УВЕЛИЧЕННЫЕ РАЗМЕРЫ (Немного больше)
     const ROWS = 7;
-    const PEG_RADIUS = 4;
-    const BALL_RADIUS = 7.5;
+    const PEG_RADIUS = 5;      // Было 4 -> Стало 5
+    const BALL_RADIUS = 10;     // Было 7.5 -> Стало 10
     const GRAVITY = 0.25;
-    const RESTITUTION = 0.5;
+    const RESTITUTION = 0.48;
 
     // Множители и цвета для секций [0, 1, 2, 3, 2, 1, 0]
     const MULTIPLIERS = [0, 1, 2, 3, 2, 1, 0];
@@ -579,9 +579,9 @@
 
     // Генерация колышков
     const pegs = [];
-    const startY = 90;
-    const rowSpacing = 50;
-    const colSpacing = 38;
+    const startY = 85;
+    const rowSpacing = 52;
+    const colSpacing = 40;
 
     for (let r = 0; r < ROWS; r++) {
       const count = r + 3;
@@ -802,43 +802,54 @@
         ctx.fillText('x' + m, x + slotWidth / 2, y + 24);
       }
 
-      // Отрисовка объёмных и чётких 3D-шариков
+      // Отрисовка идеальных реалистичных 3D-шариков (как на фото)
       for (let i = 0; i < balls.length; i++) {
         const b = balls[i];
 
-        // 1. Мягкая тень под шариком
+        // 1. Мягкая объёмная тень под шариком
         ctx.save();
         ctx.beginPath();
-        ctx.arc(b.x + 1.5, b.y + 2, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.arc(b.x + 2, b.y + 3, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.fill();
         ctx.restore();
 
-        // 2. Радиальный градиент с бликом для эффекта 3D
+        // 2. Основная сферическая заливка с глянцевым затемнением книзу
         ctx.save();
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
 
+        // Градиент от центра со смещением влево-вверх
         const grad = ctx.createRadialGradient(
-          b.x - BALL_RADIUS * 0.3,
-          b.y - BALL_RADIUS * 0.3,
-          BALL_RADIUS * 0.1,
+          b.x - BALL_RADIUS * 0.25,
+          b.y - BALL_RADIUS * 0.25,
+          BALL_RADIUS * 0.05,
           b.x,
           b.y,
           BALL_RADIUS
         );
 
-        grad.addColorStop(0, '#ffffff'); // Светлый блик
-        grad.addColorStop(0.3, b.color); // Основной выбранный цвет
-        grad.addColorStop(1, '#000000'); // Затемнение по краям
+        grad.addColorStop(0, b.color);
+        grad.addColorStop(0.7, b.color);
+        grad.addColorStop(1, '#000000'); // Затемнение краев шарa
 
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // Тонкий чёткий контур
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
+        // 3. Яркий белый овальный блик в верхней левой части (как на фото)
+        ctx.beginPath();
+        ctx.ellipse(
+          b.x - BALL_RADIUS * 0.3,
+          b.y - BALL_RADIUS * 0.32,
+          BALL_RADIUS * 0.38,
+          BALL_RADIUS * 0.26,
+          -Math.PI / 4,
+          0,
+          Math.PI * 2
+        );
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.fill();
+
         ctx.restore();
       }
 
