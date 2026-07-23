@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Plinko Game</title>
   
-  <!-- 1. ИЗОЛИРОВАННЫЙ УЛОВИТЕЛЬ ОШИБОК (Запускается первым) -->
+  <!-- ИЗОЛИРОВАННЫЙ УЛОВИТЕЛЬ ОШИБОК -->
   <script>
     window.onerror = function(msg, url, lineNo, colNo, error) {
       var errDiv = document.createElement('div');
@@ -20,7 +20,6 @@
     };
   </script>
 
-  <!-- 2. ВНЕШНИЙ СКРИПТ С АТРИБУТОМ DEFER (Не блокирует страницу) -->
   <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 
   <style>
@@ -133,6 +132,7 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       touch-action: none;
       cursor: pointer;
+      display: block;
     }
     .hint {
       margin-top: 10px;
@@ -330,7 +330,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.15</div>
+  <div class="app-version">v1.0.16</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -408,9 +408,7 @@
     </div>
   </div>
 
-  <!-- ОСНОВНОЙ СКРИПТ ИГРЫ -->
   <script>
-    // БЕЗОПАСНОЕ ХРАНИЛИЩЕ
     var safeStorage = {
       getItem: function(key) {
         try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -420,7 +418,6 @@
       }
     };
 
-    // 1. DOM ЭЛЕМЕНТЫ
     var canvas = document.getElementById('gameCanvas');
     var ctx = canvas.getContext('2d');
     var scoreEl = document.getElementById('score');
@@ -450,7 +447,6 @@
     var themeDarkBtn = document.getElementById('theme-dark-btn');
     var themeLightBtn = document.getElementById('theme-light-btn');
 
-    // 2. СОСТОЯНИЕ И КОНСТАНТЫ ФИЗИКИ
     var score = 100;
     var saveTimeout = null;
     var currentTheme = safeStorage.getItem('plinko_theme') || 'dark';
@@ -471,7 +467,6 @@
     var rowSpacing = 45;
     var colSpacing = 38;
 
-    // Генерируем колышки
     for (var r = 0; r < ROWS; r++) {
       var count = r + 3;
       var startX = (canvas.width - (count - 1) * colSpacing) / 2;
@@ -480,7 +475,6 @@
       }
     }
 
-    // 3. ФУНКЦИИ ИГРЫ
     function applyTheme(theme) {
       currentTheme = theme;
       safeStorage.setItem('plinko_theme', theme);
@@ -669,12 +663,18 @@
       ctx.restore();
     }
 
-    function loop() {
+    function renderFrame() {
       update();
       draw();
+    }
+
+    function loop() {
+      renderFrame();
       requestAnimationFrame(loop);
     }
 
-    // 4. ОБРАБОТЧИКИ СОБЫТИЙ
     themeDarkBtn.addEventListener('click', function() { applyTheme('dark'); });
-    themeLightBt
+    themeLightBtn.addEventListener('click', function() { applyTheme('light'); });
+
+    menuTabBtn.addEventListener('click', function() { menuModal.style.display = 'flex'; });
+    closeMenu.addEventListener('click', function() { menuM
