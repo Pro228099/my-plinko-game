@@ -28,6 +28,30 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
+    /* === РАДУЖНАЯ НЕОНОВАЯ АНИМАЦИЯ === */
+    @keyframes rainbowGlow {
+      0% {
+        border-color: #ff0055;
+        box-shadow: 0 0 10px #ff0055, inset 0 0 5px #ff0055;
+      }
+      25% {
+        border-color: #00e5ff;
+        box-shadow: 0 0 10px #00e5ff, inset 0 0 5px #00e5ff;
+      }
+      50% {
+        border-color: #00ff66;
+        box-shadow: 0 0 10px #00ff66, inset 0 0 5px #00ff66;
+      }
+      75% {
+        border-color: #ffb700;
+        box-shadow: 0 0 10px #ffb700, inset 0 0 5px #ffb700;
+      }
+      100% {
+        border-color: #ff0055;
+        box-shadow: 0 0 10px #ff0055, inset 0 0 5px #ff0055;
+      }
+    }
+
     /* === СВЕТЛАЯ ТЕМА === */
     body.light-theme {
       background-color: #eef2f5;
@@ -46,9 +70,7 @@
     body.light-theme .modal-box {
       background: #ffffff;
       color: #111111;
-      border-color: rgba(0, 0, 0, 0.1);
     }
-    body.light-theme .icon-btn { color: #111111; }
     body.light-theme textarea {
       background: #f0f3f6;
       color: #111111;
@@ -69,17 +91,23 @@
       transition: background 0.3s ease;
     }
 
-    .icon-btn {
-      background: none;
-      border: none;
-      font-size: 20px;
+    /* НЕОНОВАЯ КНОПКА НАСТРОЕК */
+    .icon-btn-neon {
+      background: rgba(0, 0, 0, 0.2);
+      border: 2px solid #ff0055;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
       cursor: pointer;
-      color: #ffffff;
-      padding: 4px;
       line-height: 1;
+      animation: rainbowGlow 4s linear infinite;
       transition: transform 0.2s ease;
     }
-    .icon-btn:active { transform: scale(0.9) rotate(45deg); }
+    .icon-btn-neon:active { transform: scale(0.88) rotate(45deg); }
 
     .score-container {
       font-size: 16px;
@@ -170,11 +198,11 @@
       position: relative;
       background: #1c2733;
       padding: 20px 16px;
-      border-radius: 16px;
+      border-radius: 18px;
       width: 90%;
       max-width: 320px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 2px solid #ff0055;
+      animation: rainbowGlow 6s linear infinite;
       text-align: center;
     }
 
@@ -312,7 +340,7 @@
 <body>
 
   <div class="header">
-    <button id="settings-btn" class="icon-btn" title="Настройки">⚙️</button>
+    <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
     <div class="version-tag">v1.2.0</div>
   </div>
@@ -368,7 +396,7 @@
 
   <!-- Подтверждение сброса -->
   <div id="confirm-modal" class="modal-overlay">
-    <div class="modal-box">
+    <div class="modal-box" style="border: 1px solid rgba(255,255,255,0.1); animation: none;">
       <div style="font-size: 15px; margin-bottom: 15px;">Точно сбросить счёт до 100?</div>
       <div class="modal-buttons-row">
         <button id="confirm-yes" class="btn btn-danger" style="padding: 10px;">Да</button>
@@ -622,7 +650,7 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // События Canvas и игры
+    // События
     canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -632,7 +660,7 @@
 
     document.getElementById('drop-btn').addEventListener('click', () => spawnBall());
 
-    // Переключение табов в настройках
+    // Табы
     tabSettingsBtn.addEventListener('click', () => {
       tabSettingsBtn.classList.add('active');
       tabFeedbackBtn.classList.remove('active');
@@ -647,7 +675,7 @@
       tabSettings.classList.remove('active');
     });
 
-    // Настройки и Модалки
+    // Настройки
     settingsBtn.addEventListener('click', () => {
       feedbackStatus.innerText = '';
       settingsModal.style.display = 'flex';
@@ -666,7 +694,7 @@
       settingsModal.style.display = 'none';
     });
 
-    // Отправка отзыва через Telegram WebApp API
+    // Отправка отзыва
     sendFeedbackBtn.addEventListener('click', () => {
       const text = feedbackInput.value.trim();
       if (!text) {
@@ -675,19 +703,11 @@
       }
 
       if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify({
-          type: "feedback",
-          text: text
-        }));
-        feedbackStatus.innerText = "Отправка...";
-      } else {
-        alert("Отправка доступна только при запуске внутри Telegram!");
-      }
-    });
-
-    // Инициализация
-    applyTheme(currentTheme);
-    gameLoop();
-  </script>
-</body>
-</html>
+        try {
+          tg.sendData(JSON.stringify({
+            type: "feedback",
+            text: text
+          }));
+          feedbackStatus.innerText = "Отправлено!";
+        } catch (e) {
+          alert("Ошибка отправки. Telegram требует запу
