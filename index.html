@@ -345,6 +345,19 @@
       gap: 10px;
       margin-top: 16px;
     }
+
+    /* Пасхалка */
+    .easter-egg-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0 8px 0;
+      color: #ff4081;
+    }
+    .easter-egg-sub {
+      font-size: 12px;
+      color: #708499;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -380,7 +393,16 @@
     <div class="modal-box" style="border: 1px solid rgba(255,255,255,0.1); animation: none;">
       <button id="close-menu" class="close-btn">&times;</button>
       <div class="modal-title">☰ Меню</div>
-      <div style="font-size: 15px; color: #708499; margin: 25px 0;">Coming soon...</div>
+      <div id="coming-soon-text" style="font-size: 15px; color: #708499; margin: 25px 0; cursor: pointer; user-select: none;">Coming soon...</div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Пасхалки -->
+  <div id="easter-egg-modal" class="modal-overlay">
+    <div class="modal-box">
+      <button id="close-easter-egg" class="close-btn">&times;</button>
+      <div class="easter-egg-title">люблю кефира❤️</div>
+      <div class="easter-egg-sub">-pro228099</div>
     </div>
   </div>
 
@@ -438,6 +460,10 @@
     const menuBtn = document.getElementById('menu-btn');
     const menuModal = document.getElementById('menu-modal');
     const closeMenu = document.getElementById('close-menu');
+    const comingSoonText = document.getElementById('coming-soon-text');
+
+    const easterEggModal = document.getElementById('easter-egg-modal');
+    const closeEasterEgg = document.getElementById('close-easter-egg');
 
     const themeDarkBtn = document.getElementById('theme-dark-btn');
     const themeLightBtn = document.getElementById('theme-light-btn');
@@ -452,6 +478,7 @@
     let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
     let displayedScore = score;
     let bannerTimeout = null;
+    let comingSoonClicks = 0;
 
     scoreEl.innerText = Math.round(displayedScore);
 
@@ -688,23 +715,10 @@
     menuBtn.addEventListener('click', () => {
       menuModal.style.display = 'flex';
     });
-    closeMenu.addEventListener('click', () => menuModal.style.display = 'none');
-
-    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
-    themeLightBtn.addEventListener('click', () => applyTheme('light'));
-
-    openConfirmBtn.addEventListener('click', () => confirmModal.style.display = 'flex');
-    confirmNo.addEventListener('click', () => confirmModal.style.display = 'none');
-    confirmYes.addEventListener('click', () => {
-      score = 100;
-      localStorage.setItem('plinko_v2_score', '100');
-      confirmModal.style.display = 'none';
-      settingsModal.style.display = 'none';
+    closeMenu.addEventListener('click', () => {
+      menuModal.style.display = 'none';
+      comingSoonClicks = 0;
     });
 
-    applyTheme(currentTheme);
-    gameLoop();
-  </script>
-</body>
-</html>
-
+    // Пасхалка по 5 кликам
+    comingSoonText.addEventListener('
