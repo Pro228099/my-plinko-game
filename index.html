@@ -342,7 +342,7 @@
   <div class="header">
     <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
-    <div class="version-tag">v1.2.0</div>
+    <div class="version-tag">v1.2.1</div>
   </div>
 
   <div class="canvas-container">
@@ -710,4 +710,15 @@
           }));
           feedbackStatus.innerText = "Отправлено!";
         } catch (e) {
-          alert("Ошибка отправки. Telegram требует запу
+          alert("Ошибка отправки: " + e.message);
+          }
+      } else {
+        alert("Отправка доступна только при запуске внутри Telegram!");
+      }
+    });
+
+    applyTheme(currentTheme);
+    gameLoop();
+  </script>
+</body>
+</html>
