@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -372,7 +373,7 @@
     </div>
 
     <div class="version-tag">
-      v1.2.3
+      v1.2.4
       <span class="author-tag">by @pro228099</span>
     </div>
   </div>
@@ -479,6 +480,7 @@
     let displayedScore = score;
     let bannerTimeout = null;
     let comingSoonClicks = 0;
+    let lastSpawnTime = 0; // Время последнего спавна шарика
 
     scoreEl.innerText = Math.round(displayedScore);
 
@@ -554,10 +556,17 @@
 
     // Спавн шарика
     function spawnBall(customX) {
+      const now = Date.now();
+      if (now - lastSpawnTime < 300) {
+        return; // Задержка 300 мс между спавнами
+      }
+
       if (score < 10) {
         showNoScoreBanner();
         return;
       }
+
+      lastSpawnTime = now;
       updateScore(-10);
 
       const spawnX = customX !== undefined 
@@ -597,15 +606,18 @@
         if (p.alpha <= 0) popups.splice(i, 1);
       }
 
+      // Обновление позиций шаров и коллизии с препятствиями
       for (let i = balls.length - 1; i >= 0; i--) {
         const b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
 
+        // Стенки
         if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
         if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
+        // Колышки
         for (let j = 0; j < pegs.length; j++) {
           const p = pegs[j];
           const dx = b.x - p.x;
@@ -624,7 +636,47 @@
             b.vy = Math.sin(angle) * speed;
           }
         }
+      }
 
+      // Коллизии между шариками (не сквозные шары)
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          const b1 = balls[i];
+          const b2 = balls[j];
+
+          const dx = b2.x - b1.x;
+          const dy = b2.y - b1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = BALL_RADIUS * 2;
+
+          if (dist < minDist && dist > 0) {
+            const angle = Math.atan2(dy, dx);
+            const overlap = (minDist - dist) / 2;
+
+            // Расталкивание шаров
+            b1.x -= Math.cos(angle) * overlap;
+            b1.y -= Math.sin(angle) * overlap;
+            b2.x += Math.cos(angle) * overlap;
+            b2.y += Math.sin(angle) * overlap;
+
+            // Передача импульса (упругое столкновение)
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const kx = b1.vx - b2.vx;
+            const ky = b1.vy - b2.vy;
+            const p = 2 * (nx * kx + ny * ky) / 2;
+
+            b1.vx -= p * nx * RESTITUTION;
+            b1.vy -= p * ny * RESTITUTION;
+            b2.vx += p * nx * RESTITUTION;
+            b2.vy += p * ny * RESTITUTION;
+          }
+        }
+      }
+
+      // Попадание в ячейки
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const b = balls[i];
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
           const slotIdx = getSlotIndex(b.x);
           const mult = MULTIPLIERS[slotIdx];
@@ -720,7 +772,7 @@
       comingSoonClicks = 0;
     });
 
-     // Пасхалка по 5 кликам
+    // Пасхалка по 5 кликам
     comingSoonText.addEventListener('click', () => {
       comingSoonClicks++;
       if (comingSoonClicks >= 5) {
