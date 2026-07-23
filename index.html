@@ -556,8 +556,8 @@
     // Спавн шарика
     function spawnBall(customX) {
       const now = Date.now();
-      if (now - lastSpawnTime < 200) {
-        return; // Задержка 200 мс между спавнами
+      if (now - lastSpawnTime < 100) {
+        return; // Задержка 100 мс между спавнами
       }
 
       if (score < 10) {
