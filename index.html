@@ -415,7 +415,7 @@
     </div>
 
     <div class="version-tag">
-      v1.2.7
+      v1.2.8
       <span class="author-tag">by @pro228099</span>
     </div>
   </div>
@@ -612,7 +612,7 @@
       canvas.style.background = isLight ? bgPair[1] : bgPair[0];
     }
 
-    // РАЗМЕРЫ И ФИЗИКА (Исправлен баг с крайними колышками)
+    // РАЗМЕРЫ И ФИЗИКА
     const ROWS = 7;
     const PEG_RADIUS = 5;
     const BALL_RADIUS = 10;
@@ -622,11 +622,11 @@
     const MULTIPLIERS = [0, 1, 2, 3, 2, 1, 0];
     const COLORS = ['#546e7a', '#2ea6ff', '#ff9800', '#e91e63', '#ff9800', '#2ea6ff', '#546e7a'];
 
-    // Генерация колышков (Смещение внутрь, чтобы не застревали)
+    // Генерация колышков (Растянуты вниз и слегка расширены в ширину)
     const pegs = [];
-    const startY = 85;
-    const rowSpacing = 52;
-    const colSpacing = 36; // Было 40, уменьшено до 36 для комфортного отступа от краев
+    const startY = 95;       // Смещено ниже для равномерного баланса
+    const rowSpacing = 68;   // Увеличено с 52 до 68, чтобы растянуть сетку ближе к ячейкам
+    const colSpacing = 38;   // Увеличено с 36 до 38 для дополнительного пространства между колышками
 
     for (let r = 0; r < ROWS; r++) {
       const count = r + 3;
