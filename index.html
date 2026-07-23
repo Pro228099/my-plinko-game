@@ -57,6 +57,10 @@
       opacity: 0.85;
       z-index: 500;
       padding: 6px;
+      transition: transform 0.2s ease;
+    }
+    .settings-btn:active {
+      transform: scale(0.9) rotate(45deg);
     }
 
     .menu-tab-btn {
@@ -74,6 +78,10 @@
       cursor: pointer;
       z-index: 500;
       backdrop-filter: blur(4px);
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+    .menu-tab-btn:active {
+      transform: translateX(-50%) scale(0.95);
     }
     body.light-theme .menu-tab-btn {
       background: rgba(0, 0, 0, 0.08);
@@ -214,6 +222,7 @@
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     .theme-btn.active {
       background: #2ea6ff;
@@ -271,7 +280,9 @@
       border-radius: 10px;
       cursor: pointer;
       width: 100%;
+      transition: background 0.2s ease, transform 0.1s ease;
     }
+    .modal-btn:active { transform: scale(0.96); }
     .modal-btn-danger { background: #f44336; }
     .modal-btn-secondary { background: #37474f; }
 
@@ -295,26 +306,9 @@
       30% { opacity: 1; transform: translate(-50%, -20px) scale(1.3); }
       100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
     }
-
-    /* Окно перехвата критических ошибок */
-    #error-box {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #ff1744;
-      color: #fff;
-      padding: 12px;
-      font-size: 12px;
-      z-index: 99999;
-      word-break: break-all;
-    }
   </style>
 </head>
 <body>
-
-  <div id="error-box"></div>
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
@@ -397,83 +391,71 @@
   </div>
 
   <script>
-    // Ловец ошибок для отладки прямо в Telegram
-    window.onerror = function(msg, url, line) {
-      var errBox = document.getElementById('error-box');
-      if (errBox) {
-        errBox.style.display = 'block';
-        errBox.innerHTML = '<b>Ошибка JS:</b> ' + msg + '<br><small>Строка: ' + line + '</small>';
-      }
-      return false;
-    };
+    const tg = window.Telegram?.WebApp;
+    if (tg?.expand) tg.expand();
 
-    var tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg && tg.expand) {
-      tg.expand();
-    }
+    // 1. DOM ЭЛЕМЕНТЫ
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
 
-    // 1. ИНИЦИАЛИЗАЦИЯ
-    var canvas = document.getElementById('gameCanvas');
-    var ctx = canvas.getContext('2d');
-    var scoreEl = document.getElementById('score');
-    var scoreBoardEl = document.getElementById('score-board');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+    const openConfirmReset = document.getElementById('open-confirm-reset');
 
-    var settingsBtn = document.getElementById('settings-btn');
-    var settingsModal = document.getElementById('settings-modal');
-    var closeSettings = document.getElementById('close-settings');
-    var openConfirmReset = document.getElementById('open-confirm-reset');
+    const menuTabBtn = document.getElementById('menu-tab-btn');
+    const menuModal = document.getElementById('menu-modal');
+    const closeMenu = document.getElementById('close-menu');
 
-    var menuTabBtn = document.getElementById('menu-tab-btn');
-    var menuModal = document.getElementById('menu-modal');
-    var closeMenu = document.getElementById('close-menu');
+    const openFeedbackBtn = document.getElementById('open-feedback-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const closeFeedback = document.getElementById('close-feedback');
+    const sendFeedbackBtn = document.getElementById('send-feedback-btn');
+    const feedbackText = document.getElementById('feedback-text');
 
-    var openFeedbackBtn = document.getElementById('open-feedback-btn');
-    var feedbackModal = document.getElementById('feedback-modal');
-    var closeFeedback = document.getElementById('close-feedback');
-    var sendFeedbackBtn = document.getElementById('send-feedback-btn');
-    var feedbackText = document.getElementById('feedback-text');
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmYes = document.getElementById('confirm-yes');
+    const confirmNo = document.getElementById('confirm-no');
 
-    var confirmModal = document.getElementById('confirm-modal');
-    var confirmYes = document.getElementById('confirm-yes');
-    var confirmNo = document.getElementById('confirm-no');
+    const resetModal = document.getElementById('reset-modal');
+    const resetBtn = document.getElementById('reset-btn');
 
-    var resetModal = document.getElementById('reset-modal');
-    var resetBtn = document.getElementById('reset-btn');
+    const themeDarkBtn = document.getElementById('theme-dark-btn');
+    const themeLightBtn = document.getElementById('theme-light-btn');
 
-    var themeDarkBtn = document.getElementById('theme-dark-btn');
-    var themeLightBtn = document.getElementById('theme-light-btn');
+    // 2. СОСТОЯНИЕ И КОНСТАНТЫ ФИЗИКИ
+    let score = 100;
+    let saveTimeout = null;
+    let currentTheme = localStorage.getItem('plinko_theme') || 'dark';
 
-    var score = 100;
-    var saveTimeout = null;
-    var currentTheme = localStorage.getItem('plinko_theme') || 'dark';
+    const ROWS = 7;
+    const PEG_RADIUS = 4;
+    const BALL_RADIUS = 7;
+    const GRAVITY = 0.25;
+    const RESTITUTION = 0.5;
 
-    // 2. ФИЗИКА И МАССИВЫ
-    var ROWS = 7;
-    var PEG_RADIUS = 4;
-    var BALL_RADIUS = 7;
-    var GRAVITY = 0.25;
-    var RESTITUTION = 0.5;
+    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
+    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
 
-    var MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    var COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
+    const pegs = [];
+    const balls = [];
 
-    var pegs = [];
-    var balls = [];
+    const startY = 80;
+    const rowSpacing = 45;
+    const colSpacing = 38;
 
-    var startY = 80;
-    var rowSpacing = 45;
-    var colSpacing = 38;
-
-    for (var r = 0; r < ROWS; r++) {
-      var count = r + 3;
-      var startX = (canvas.width - (count - 1) * colSpacing) / 2;
-      for (var c = 0; c < count; c++) {
+    // Сразу генерируем палочки (колышки)
+    for (let r = 0; r < ROWS; r++) {
+      const count = r + 3;
+      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (let c = 0; c < count; c++) {
         pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
       }
     }
 
-    // 3. ФУНКЦИИ
-    function applyTheme(theme) {
+    // 3. ФУНКЦИИ ИГРЫ
+    const applyTheme = (theme) => {
       currentTheme = theme;
       localStorage.setItem('plinko_theme', theme);
       if (theme === 'light') {
@@ -485,24 +467,24 @@
         themeLightBtn.classList.remove('active');
         themeDarkBtn.classList.add('active');
       }
-    }
+    };
 
-    function checkGameOver() {
+    const checkGameOver = () => {
       if (score < 10 && balls.length === 0) {
         resetModal.style.display = 'flex';
       }
-    }
+    };
 
-    function loadScore() {
-      var localSaved = localStorage.getItem('plinko_score');
+    const loadScore = () => {
+      const localSaved = localStorage.getItem('plinko_score');
       if (localSaved !== null) {
         score = parseInt(localSaved, 10);
         scoreEl.innerText = score;
       }
 
-      if (tg && tg.CloudStorage) {
-        tg.CloudStorage.getItem('plinko_score', function(err, value) {
-          if (!err && value !== null && value !== undefined && value !== '') {
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.getItem('plinko_score', (err, value) => {
+          if (!err && value) {
             score = parseInt(value, 10);
             scoreEl.innerText = score;
             localStorage.setItem('plinko_score', score.toString());
@@ -512,59 +494,59 @@
       } else {
         checkGameOver();
       }
-    }
+    };
 
-    function forceSaveCloud() {
-      if (tg && tg.CloudStorage) {
-        tg.CloudStorage.setItem('plinko_score', score.toString(), function(err) {
+    const forceSaveCloud = () => {
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {
           if (err) console.error('Ошибка сохранения:', err);
         });
       }
-    }
+    };
 
-    function saveScore() {
+    const saveScore = () => {
       localStorage.setItem('plinko_score', score.toString());
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(forceSaveCloud, 500);
-    }
+    };
 
-    function sendFeedback() {
-      var text = feedbackText.value.trim();
+    const sendFeedback = () => {
+      const text = feedbackText.value.trim();
       if (!text) {
         alert("Пожалуйста, введите текст сообщения.");
         return;
       }
 
-      var payload = { type: 'feedback', text: text };
+      const payload = { type: 'feedback', text };
 
-      if (tg && tg.sendData) {
+      if (tg?.sendData) {
         tg.sendData(JSON.stringify(payload));
       } else {
         alert("Отправка работает только внутри открытого WebApp в Telegram!");
       }
-    }
+    };
 
-    function getSlotIndex(x) {
-      var slotWidth = canvas.width / MULTIPLIERS.length;
-      var idx = Math.floor(x / slotWidth);
+    const getSlotIndex = (x) => {
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      const idx = Math.floor(x / slotWidth);
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
-    }
+    };
 
-    function showFloatingScore(x, y, points, color) {
-      var el = document.createElement('div');
+    const showFloatingScore = (x, y, points, color) => {
+      const el = document.createElement('div');
       el.className = 'floating-score';
-      el.innerText = '+' + points;
+      el.innerText = `+${points}`;
       el.style.color = color;
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
       document.body.appendChild(el);
 
-      setTimeout(function() { el.remove(); }, 800);
-    }
+      setTimeout(() => el.remove(), 800);
+    };
 
-    function update() {
-      for (var i = balls.length - 1; i >= 0; i--) {
-        var b = balls[i];
+    const update = () => {
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
@@ -572,38 +554,37 @@
         if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
         if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
-        for (var j = 0; j < pegs.length; j++) {
-          var p = pegs[j];
-          var dx = b.x - p.x;
-          var dy = b.y - p.y;
-          var dist = Math.hypot(dx, dy);
-          var minDist = BALL_RADIUS + PEG_RADIUS;
+        pegs.forEach(p => {
+          const dx = b.x - p.x;
+          const dy = b.y - p.y;
+          const dist = Math.hypot(dx, dy);
+          const minDist = BALL_RADIUS + PEG_RADIUS;
 
           if (dist < minDist) {
-            var angle = Math.atan2(dy, dx);
-            var overlap = minDist - dist;
+            const angle = Math.atan2(dy, dx);
+            const overlap = minDist - dist;
             b.x += Math.cos(angle) * overlap;
             b.y += Math.sin(angle) * overlap;
 
-            var speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
+            const speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
-        }
+        });
 
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
-          var slotIdx = getSlotIndex(b.x);
-          var mult = MULTIPLIERS[slotIdx];
-          var gained = 10 * mult;
+          const slotIdx = getSlotIndex(b.x);
+          const mult = MULTIPLIERS[slotIdx];
+          const gained = 10 * mult;
 
           score += gained;
           scoreEl.innerText = score;
           saveScore();
 
-          var rect = canvas.getBoundingClientRect();
-          var slotWidth = canvas.width / MULTIPLIERS.length;
-          var popupX = rect.left + (slotIdx + 0.5) * slotWidth;
-          var popupY = rect.top + (canvas.height - 40);
+          const rect = canvas.getBoundingClientRect();
+          const slotWidth = canvas.width / MULTIPLIERS.length;
+          const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
+          const popupY = rect.top + (canvas.height - 40);
 
           showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
 
@@ -611,84 +592,90 @@
           checkGameOver();
         }
       }
-    }
+    };
 
-    function draw() {
+    const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
-      for (var i = 0; i < pegs.length; i++) {
-        var p = pegs[i];
+      pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      }
+      });
 
-      var slotWidth = canvas.width / MULTIPLIERS.length;
-      for (var k = 0; k < MULTIPLIERS.length; k++) {
-        var x = k * slotWidth;
-        var y = canvas.height - 40;
-        ctx.fillStyle = COLORS[k];
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      MULTIPLIERS.forEach((m, i) => {
+        const x = i * slotWidth;
+        const y = canvas.height - 40;
+        ctx.fillStyle = COLORS[i];
         ctx.fillRect(x + 2, y, slotWidth - 4, 38);
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('x' + MULTIPLIERS[k], x + slotWidth / 2, y + 24);
-      }
+        ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
+      });
 
       ctx.save();
       ctx.fillStyle = '#fffb00';
       ctx.shadowBlur = 12;
       ctx.shadowColor = '#fffb00';
-      for (var m = 0; m < balls.length; m++) {
-        var b = balls[m];
+      balls.forEach(b => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-      }
+      });
       ctx.restore();
-    }
+    };
 
-    function loop() {
+    const loop = () => {
       update();
       draw();
       requestAnimationFrame(loop);
-    }
+    };
 
-    // 4. СОБЫТИЯ
-    themeDarkBtn.onclick = function() { applyTheme('dark'); };
-    themeLightBtn.onclick = function() { applyTheme('light'); };
+    // 4. ОБРАБОТЧИКИ СОБЫТИЙ
+    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
+    themeLightBtn.addEventListener('click', () => applyTheme('light'));
 
-    menuTabBtn.onclick = function() { menuModal.style.display = 'flex'; };
-    closeMenu.onclick = function() { menuModal.style.display = 'none'; };
+    menuTabBtn.addEventListener('click', () => { menuModal.style.display = 'flex'; });
+    closeMenu.addEventListener('click', () => { menuModal.style.display = 'none'; });
 
-    settingsBtn.onclick = function() { settingsModal.style.display = 'flex'; };
-    closeSettings.onclick = function() { settingsModal.style.display = 'none'; };
+    settingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
+    closeSettings.addEventListener('click', () => { settingsModal.style.display = 'none'; });
 
-    openFeedbackBtn.onclick = function() {
+    openFeedbackBtn.addEventListener('click', () => {
       settingsModal.style.display = 'none';
       feedbackModal.style.display = 'flex';
-    };
-    closeFeedback.onclick = function() { feedbackModal.style.display = 'none'; };
-    sendFeedbackBtn.onclick = sendFeedback;
+    });
+    closeFeedback.addEventListener('click', () => { feedbackModal.style.display = 'none'; });
+    sendFeedbackBtn.addEventListener('click', sendFeedback);
 
-    openConfirmReset.onclick = function() { confirmModal.style.display = 'flex'; };
-    confirmNo.onclick = function() { confirmModal.style.display = 'none'; };
-    confirmYes.onclick = function() {
+    openConfirmReset.addEventListener('click', () => { confirmModal.style.display = 'flex'; });
+    confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; });
+    confirmYes.addEventListener('click', () => {
       score = 100;
       scoreEl.innerText = score;
       saveScore();
       forceSaveCloud();
       confirmModal.style.display = 'none';
       settingsModal.style.display = 'none';
-    };
+    });
 
-    resetBtn.onclick = function() {
+    resetBtn.addEventListener('click', () => {
       score = 100;
       scoreEl.innerText = score;
       saveScore();
       resetModal.style.display = 'none';
-    };
+    });
 
-    // Клики по 
+    // Спавн шарика по клику на Canvas
+    canvas.addEventListener('pointerdown', (e) => {
+      if (score < 10) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+
+      score -= 10;
+      scoreEl.innerText =
