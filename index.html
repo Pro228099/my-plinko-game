@@ -342,7 +342,7 @@
   <div class="header">
     <button id="settings-btn" class="icon-btn-neon" title="Настройки">⚙️</button>
     <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
-    <div class="version-tag">v1.2.1</div>
+    <div class="version-tag">v1.1.1</div>
   </div>
 
   <div class="canvas-container">
@@ -702,18 +702,19 @@
         return;
       }
 
-      if (tg && tg.sendData) {
+      if (tg && typeof tg.sendData === 'function') {
         try {
           tg.sendData(JSON.stringify({
             type: "feedback",
             text: text
           }));
           feedbackStatus.innerText = "Отправлено!";
-        } catch (e) {
-          alert("Ошибка отправки: " + e.message);
-          }
+          feedbackInput.value = "";
+        } catch (e){
+        alert("Ошибка отправки: " + e.message);
+        }
       } else {
-        alert("Отправка доступна только при запуске внутри Telegram!");
+        alert("Отправка сообщений доступна только при открытии через кнопку Меню в Telegram!");
       }
     });
 
