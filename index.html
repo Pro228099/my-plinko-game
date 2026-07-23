@@ -312,7 +312,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.11</div>
+  <div class="app-version">v1.0.12</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -391,8 +391,12 @@
   </div>
 
   <script>
+    // 0. ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
     const tg = window.Telegram?.WebApp;
-    if (tg?.expand) tg.expand();
+    if (tg) {
+      tg.ready();
+      if (tg.expand) tg.expand();
+    }
 
     // 1. DOM ЭЛЕМЕНТЫ
     const canvas = document.getElementById('gameCanvas');
@@ -483,14 +487,19 @@
       }
 
       if (tg?.CloudStorage) {
-        tg.CloudStorage.getItem('plinko_score', (err, value) => {
-          if (!err && value) {
-            score = parseInt(value, 10);
-            scoreEl.innerText = score;
-            localStorage.setItem('plinko_score', score.toString());
-          }
+        try {
+          tg.CloudStorage.getItem('plinko_score', (err, value) => {
+            if (!err && value) {
+              score = parseInt(value, 10);
+              scoreEl.innerText = score;
+              localStorage.setItem('plinko_score', score.toString());
+            }
+            checkGameOver();
+          });
+        } catch (e) {
+          console.warn('CloudStorage недоступен:', e);
           checkGameOver();
-        });
+        }
       } else {
         checkGameOver();
       }
@@ -498,9 +507,11 @@
 
     const forceSaveCloud = () => {
       if (tg?.CloudStorage) {
-        tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {
-          if (err) console.error('Ошибка сохранения:', err);
-        });
+        try {
+          tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {
+            if (err) console.error('Ошибка сохранения:', err);
+          });
+        } catch(e) {}
       }
     };
 
@@ -519,12 +530,17 @@
 
       const payload = { type: 'feedback', text };
 
-      if (tg?.sendData) {
-        tg.sendData(JSON.stringify(payload));
-        feedbackModal.style.display = 'none';
-        feedbackText.value = '';
+      if (tg && typeof tg.sendData === 'function') {
+        try {
+          tg.sendData(JSON.stringify(payload));
+          feedbackModal.style.display = 'none';
+          feedbackText.value = '';
+          alert("Отзыв отправлен!");
+        } catch (err) {
+          alert("Отправка через sendData доступна только при запуске с клавиатуры Telegram!");
+        }
       } else {
-        alert("Отправка через sendData доступна при открытии из меню/клавиатуры Telegram.");
+        alert("Отправка работает внутри открытого Telegram WebApp!");
       }
     };
 
@@ -660,21 +676,4 @@
       score = 100;
       scoreEl.innerText = score;
       saveScore();
-      forceSaveCloud();
-      confirmModal.style.display = 'none';
-      settingsModal.style.display = 'none';
-    });
-
-    resetBtn.addEventListener('click', () => {
-      score = 100;
-      scoreEl.innerText = score;
-      saveScore();
-      resetModal.style.display = 'none';
-    });
-
-    // Спавн шарика по клику на Canvas
-    canvas.addEventListener('pointerdown', (e) => {
-      if (score < 10) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const 
+      forceSaveClo
