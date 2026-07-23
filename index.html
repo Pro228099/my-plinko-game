@@ -720,5 +720,34 @@
       comingSoonClicks = 0;
     });
 
-    // Пасхалка по 5 кликам
-    comingSoonText.addEventListener('
+     // Пасхалка по 5 кликам
+    comingSoonText.addEventListener('click', () => {
+      comingSoonClicks++;
+      if (comingSoonClicks >= 5) {
+        menuModal.style.display = 'none';
+        easterEggModal.style.display = 'flex';
+        comingSoonClicks = 0;
+      }
+    });
+
+    closeEasterEgg.addEventListener('click', () => {
+      easterEggModal.style.display = 'none';
+    });
+
+    themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
+    themeLightBtn.addEventListener('click', () => applyTheme('light'));
+
+    openConfirmBtn.addEventListener('click', () => confirmModal.style.display = 'flex');
+    confirmNo.addEventListener('click', () => confirmModal.style.display = 'none');
+    confirmYes.addEventListener('click', () => {
+      score = 100;
+      localStorage.setItem('plinko_v2_score', '100');
+      confirmModal.style.display = 'none';
+      settingsModal.style.display = 'none';
+    });
+
+    applyTheme(currentTheme);
+    gameLoop();
+  </script>
+</body>
+</html>
