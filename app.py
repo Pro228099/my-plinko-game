@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import html
 import subprocess
 import telebot
 from telebot.types import (
@@ -40,8 +39,6 @@ if not BOT_TOKEN:
     print("CRITICAL ERROR: BOT_TOKEN не задан в переменной окружения / .env")
     sys.exit(1)
 
-print(f"--> Бот инициализирован. ADMIN_CHAT_ID: {ADMIN_CHAT_ID}")
-
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # --- КОМАНДА /start И /help ---
@@ -61,44 +58,31 @@ def send_welcome(message):
         reply_markup=inline_markup
     )
 
-# --- ОБРАБОТКА ДАННЫХ ИЗ WEBAPP ---
+# --- ОБРАБОТКА ДАННЫХ ИЗ WEB APP (ОТЗЫВЫ И ИДЕИ) ---
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     try:
-        print("--> Получен web_app_data от пользователя!")
-        data = json.loads(message.web_app_data.data)
-
-        if data.get("type") == "feedback":
+        # Распаковываем данные от клиента
+        payload = json.loads(message.web_app_data.data)
+        
+        if payload.get('action') == 'feedback':
+            user_text = payload.get('text', '')
             user = message.from_user
-            username = f"@{user.username}" if user.username else user.first_name
-            feedback_raw = data.get("text", "")
             
-            safe_username = html.escape(username)
-            safe_text = html.escape(feedback_raw)
-
-            report_message = (
-                f"<b>📩 Новый отзыв/баг из Plinko!</b>\n\n"
-                f"<b>👤 От кого:</b> {safe_username} (ID: <code>{user.id}</code>)\n"
-                f"<b>💬 Сообщение:</b>\n{safe_text}"
-            )
-
+            # Формируем красивое имя пользователя
+            user_info = f"@{user.username}" if user.username else f"{user.first_name} (ID: {user.id})"
+            
+            msg = f"💡 <b>Новый отзыв / идея!</b>\n\n<b>От:</b> {user_info}\n<b>Текст:</b> {user_text}"
+            
+            # Пересылаем отзыв админу
             if ADMIN_CHAT_ID:
-                try:
-                    bot.send_message(
-                        chat_id=int(ADMIN_CHAT_ID),
-                        text=report_message,
-                        parse_mode="HTML"
-                    )
-                    print(f"--> Отзыв успешно отправлен админу (ID: {ADMIN_CHAT_ID})")
-                except Exception as send_err:
-                    print(f"--> Ошибка при отправке сообщения админу: {send_err}")
+                bot.send_message(ADMIN_CHAT_ID, msg, parse_mode='HTML')
+                bot.reply_to(message, "Спасибо! Ваш отзыв успешно отправлен разработчику. 👍")
             else:
-                print("--> ОШИБКА: ADMIN_CHAT_ID не установлен в .env!")
-
-            bot.reply_to(message, "Спасибо! Твой отзыв успешно отправлен разработчику. 🔥")
-
+                print("ОШИБКА: ADMIN_CHAT_ID не настроен в .env!")
+                
     except Exception as e:
-        print(f"--> Ошибка при обработке WebApp Data: {e}")
+        print(f"Ошибка обработки WebApp Data: {e}")
 
 if __name__ == '__main__':
     print("Бот успешно запущен!")
