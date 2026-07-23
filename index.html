@@ -2,679 +2,314 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Plinko Game</title>
-  
-  <!-- ИЗОЛИРОВАННЫЙ УЛОВИТЕЛЬ ОШИБОК -->
-  <script>
-    window.onerror = function(msg, url, lineNo, colNo, error) {
-      var errDiv = document.createElement('div');
-      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.95);color:#fff;padding:12px;font-size:12px;z-index:999999;word-break:break-all;font-family:monospace;';
-      errDiv.innerText = '⚠️ Ошибка JS (Стр ' + lineNo + '): ' + msg;
-      if (document.body) {
-        document.body.appendChild(errDiv);
-      } else {
-        document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(errDiv); });
-      }
-      return false;
-    };
-  </script>
-
-  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Plinko Mini App</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #18222d;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      overflow: hidden;
-      position: relative;
-      transition: background 0.3s ease, color 0.3s ease;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
       user-select: none;
       -webkit-user-select: none;
     }
 
-    /* === СВЕТЛАЯ ТЕМА === */
-    body.light-theme {
-      background: #eef2f5;
-      color: #111;
-    }
-    body.light-theme #score-board { color: #111; }
-    body.light-theme canvas {
-      background: #ffffff;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-    body.light-theme .hint { color: #657786; }
-    body.light-theme .modal-box {
-      background: #ffffff;
-      color: #111;
-    }
-    body.light-theme .modal-text { color: #111; }
-    body.light-theme .feedback-textarea {
-      background: #f0f2f5 !important;
-      color: #111 !important;
-      border-color: rgba(0,0,0,0.15) !important;
-    }
-
-    /* === ВЕРХНЯЯ ПАНЕЛЬ И КНОПКИ === */
-    .settings-btn {
-      position: absolute;
-      top: 10px;
-      left: 12px;
-      font-size: 22px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      opacity: 0.85;
-      z-index: 500;
-      padding: 6px;
-      transition: transform 0.2s ease;
-    }
-    .settings-btn:active {
-      transform: scale(0.9) rotate(45deg);
-    }
-
-    .menu-tab-btn {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      padding: 6px 18px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 500;
-      backdrop-filter: blur(4px);
-      transition: background 0.2s ease, transform 0.1s ease;
-    }
-    .menu-tab-btn:active {
-      transform: translateX(-50%) scale(0.95);
-    }
-    body.light-theme .menu-tab-btn {
-      background: rgba(0, 0, 0, 0.08);
-      border-color: rgba(0, 0, 0, 0.15);
-      color: #111;
-    }
-
-    .app-version {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      font-family: monospace;
-      pointer-events: none;
-    }
-    body.light-theme .app-version {
-      color: rgba(0, 0, 0, 0.4);
-    }
-
-    #score-board {
-      font-size: 20px;
-      margin-bottom: 10px;
-      font-weight: bold;
-      display: inline-block;
-      margin-top: 40px;
-    }
-    canvas {
-      background: #10171e;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      touch-action: none;
-      cursor: pointer;
-      display: block;
-    }
-    .hint {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #8e9ca8;
-    }
-
-    /* === МОДАЛЬНЫЕ ОКНА === */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      backdrop-filter: blur(4px);
-    }
-
-    .modal-box {
-      position: relative;
-      background: #242f3d;
-      padding: 24px 20px;
-      border-radius: 16px;
-      text-align: center;
-      max-width: 290px;
-      width: 88%;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .rainbow-border-wrapper {
-      padding: 2px;
-      border-radius: 18px;
-      background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #00ff00, #00afff, #7a00ff, #ff00c8, #ff0000);
-      background-size: 400%;
-      animation: rainbowGlow 8s linear infinite;
-      max-width: 310px;
-      width: 88%;
-    }
-
-    .black-modal-content {
-      position: relative;
-      background: #000000 !important;
+    body {
+      background-color: #121820;
       color: #ffffff;
-      padding: 24px 20px;
-      border-radius: 16px;
-      text-align: center;
-      width: 100%;
-    }
-
-    @keyframes rainbowGlow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-      background: none;
-      border: none;
-      font-size: 22px;
-      color: #8e9ca8;
-      cursor: pointer;
-    }
-
-    .modal-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      color: #ffffff;
-    }
-
-    .setting-item {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #ffffff;
-    }
-
-    .theme-toggle {
-      display: flex;
-      width: 100%;
-      background: #111111;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      padding: 3px;
-      gap: 4px;
-    }
-
-    .theme-btn {
-      flex: 1;
-      padding: 8px;
-      border: none;
-      background: transparent;
-      color: #8e9ca8;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .theme-btn.active {
-      background: #2ea6ff;
-      color: #fff;
-      font-weight: bold;
-    }
-
-    .feedback-textarea {
-      width: 100%;
-      height: 90px;
-      background: #111111;
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      padding: 10px;
-      font-family: inherit;
-      font-size: 13px;
-      resize: none;
-      outline: none;
-      margin-bottom: 12px;
-    }
-
-    .danger-zone {
-      margin-top: 15px;
-      padding: 12px;
-      background: rgba(244, 67, 54, 0.1);
-      border: 1px solid #f44336;
-      border-radius: 12px;
-      text-align: left;
-    }
-    .danger-header {
-      display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: bold;
-      color: #ff5252;
-      margin-bottom: 10px;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 12px;
     }
 
-    .modal-text {
-      font-size: 16px;
-      line-height: 1.4;
-      margin-bottom: 20px;
-      color: #f5f5f5;
-    }
-
-    .modal-btn {
-      background: #2ea6ff;
-      color: #fff;
-      border: none;
-      padding: 11px 16px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
+    .header {
       width: 100%;
-      transition: background 0.2s ease, transform 0.1s ease;
+      max-width: 360px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #1c2733;
+      border-radius: 12px;
     }
-    .modal-btn:active { transform: scale(0.96); }
-    .modal-btn-danger { background: #f44336; }
-    .modal-btn-secondary { background: #37474f; }
 
-    .modal-buttons-row {
+    .score-container {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .score-value {
+      color: #4caf50;
+    }
+
+    .version-tag {
+      font-size: 11px;
+      color: #708499;
+      font-family: monospace;
+    }
+
+    .canvas-container {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      justify-content: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 360 / 520;
+      background: #18222d;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      touch-action: none;
+    }
+
+    .controls {
+      width: 100%;
+      max-width: 360px;
+      margin-top: 12px;
       display: flex;
       gap: 10px;
     }
 
-    .floating-score {
-      position: absolute;
-      font-weight: 900;
-      font-size: 22px;
-      pointer-events: none;
-      z-index: 1000;
-      animation: floatUp 0.8s ease-out forwards;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      background: #2ea6ff;
+      transition: opacity 0.2s, transform 0.1s;
     }
 
-    @keyframes floatUp {
-      0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
-      30% { opacity: 1; transform: translate(-50%, -20px) scale(1.3); }
-      100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
+    .btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .btn-reset {
+      background: #e53935;
+      flex: 0.4;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #708499;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
-  <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.16</div>
-
-  <div id="score-board">Счет: <span id="score">100</span></div>
-  <canvas id="gameCanvas" width="360" height="520"></canvas>
-  <div class="hint">Нажми на игровое поле, чтобы сбросить шарик (-10)</div>
-
-  <!-- Окно Меню -->
-  <div id="menu-modal" class="modal-overlay">
-    <div class="modal-box">
-      <button id="close-menu" class="close-btn">&times;</button>
-      <div class="modal-title">📋 Меню</div>
-      <div style="font-size: 20px; font-weight: 900; color: #ff9800; margin: 18px 0 6px 0;">
-        COMING SOON
-      </div>
-      <div style="font-size: 13px; color: #8e9ca8;">Этот раздел находится в разработке</div>
-    </div>
+  <div class="header">
+    <div class="score-container">Счёт: <span id="score" class="score-value">100</span></div>
+    <div class="version-tag">v2.0.0</div>
   </div>
 
-  <!-- Окно обратной связи -->
-  <div id="feedback-modal" class="modal-overlay">
-    <div class="modal-box">
-      <button id="close-feedback" class="close-btn">&times;</button>
-      <div class="modal-title">💡 Идея или Баг</div>
-      <textarea id="feedback-text" class="feedback-textarea" placeholder="Опишите вашу идею или найденную ошибку..."></textarea>
-      <button id="send-feedback-btn" class="modal-btn">Отправить</button>
-    </div>
+  <div class="canvas-container">
+    <canvas id="gameCanvas" width="360" height="520"></canvas>
   </div>
 
-  <!-- Окно настроек -->
-  <div id="settings-modal" class="modal-overlay">
-    <div class="rainbow-border-wrapper">
-      <div class="black-modal-content">
-        <button id="close-settings" class="close-btn">&times;</button>
-        <div class="modal-title">⚙️ Настройки</div>
-
-        <div class="setting-item">
-          <span>Тема оформления:</span>
-          <div class="theme-toggle">
-            <button id="theme-dark-btn" class="theme-btn active">🌙 Тёмная</button>
-            <button id="theme-light-btn" class="theme-btn">☀️ Светлая</button>
-          </div>
-        </div>
-
-        <div class="setting-item">
-          <span>Обратная связь:</span>
-          <button id="open-feedback-btn" class="modal-btn modal-btn-secondary">💡 Идея / Сообщить о баге</button>
-        </div>
-
-        <div class="danger-zone">
-          <div class="danger-header">
-            <span>❗</span>
-            <span>Опасная зона</span>
-          </div>
-          <button id="open-confirm-reset" class="modal-btn modal-btn-danger">Сбросить счёт</button>
-        </div>
-      </div>
-    </div>
+  <div class="controls">
+    <button id="drop-btn" class="btn">Бросить шарик (-10)</button>
+    <button id="reset-btn" class="btn btn-reset">Сброс</button>
   </div>
 
-  <!-- Подтверждение сброса -->
-  <div id="confirm-modal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-text">Точно ли ты хочешь сбросить счёт до 100?</div>
-      <div class="modal-buttons-row">
-        <button id="confirm-yes" class="modal-btn modal-btn-danger">Да</button>
-        <button id="confirm-no" class="modal-btn modal-btn-secondary">Отмена</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Окно проигрыша -->
-  <div id="reset-modal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-text">Вы потеряли весь счёт, можете сбросить его до 100</div>
-      <button id="reset-btn" class="modal-btn">Сбросить до 100</button>
-    </div>
-  </div>
+  <div class="hint">Нажми на поле или кнопку, чтобы запустить шар</div>
 
   <script>
-    var safeStorage = {
-      getItem: function(key) {
-        try { return localStorage.getItem(key); } catch (e) { return null; }
-      },
-      setItem: function(key, value) {
-        try { localStorage.setItem(key, value); } catch (e) {}
-      }
-    };
+    // Инициализация Canvas
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
 
-    var canvas = document.getElementById('gameCanvas');
-    var ctx = canvas.getContext('2d');
-    var scoreEl = document.getElementById('score');
+    // Состояние игры
+    let score = parseInt(localStorage.getItem('plinko_v2_score') || '100', 10);
+    scoreEl.innerText = score;
 
-    var settingsBtn = document.getElementById('settings-btn');
-    var settingsModal = document.getElementById('settings-modal');
-    var closeSettings = document.getElementById('close-settings');
-    var openConfirmReset = document.getElementById('open-confirm-reset');
+    // Константы
+    const ROWS = 7;
+    const PEG_RADIUS = 4;
+    const BALL_RADIUS = 7;
+    const GRAVITY = 0.25;
+    const RESTITUTION = 0.5;
 
-    var menuTabBtn = document.getElementById('menu-tab-btn');
-    var menuModal = document.getElementById('menu-modal');
-    var closeMenu = document.getElementById('close-menu');
+    const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
+    const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
 
-    var openFeedbackBtn = document.getElementById('open-feedback-btn');
-    var feedbackModal = document.getElementById('feedback-modal');
-    var closeFeedback = document.getElementById('close-feedback');
-    var sendFeedbackBtn = document.getElementById('send-feedback-btn');
-    var feedbackText = document.getElementById('feedback-text');
+    // Генерация колышков
+    const pegs = [];
+    const startY = 80;
+    const rowSpacing = 45;
+    const colSpacing = 38;
 
-    var confirmModal = document.getElementById('confirm-modal');
-    var confirmYes = document.getElementById('confirm-yes');
-    var confirmNo = document.getElementById('confirm-no');
-
-    var resetModal = document.getElementById('reset-modal');
-    var resetBtn = document.getElementById('reset-btn');
-
-    var themeDarkBtn = document.getElementById('theme-dark-btn');
-    var themeLightBtn = document.getElementById('theme-light-btn');
-
-    var score = 100;
-    var saveTimeout = null;
-    var currentTheme = safeStorage.getItem('plinko_theme') || 'dark';
-
-    var ROWS = 7;
-    var PEG_RADIUS = 4;
-    var BALL_RADIUS = 7;
-    var GRAVITY = 0.25;
-    var RESTITUTION = 0.5;
-
-    var MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
-    var COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
-
-    var pegs = [];
-    var balls = [];
-
-    var startY = 80;
-    var rowSpacing = 45;
-    var colSpacing = 38;
-
-    for (var r = 0; r < ROWS; r++) {
-      var count = r + 3;
-      var startX = (canvas.width - (count - 1) * colSpacing) / 2;
-      for (var c = 0; c < count; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      const count = r + 3;
+      const startX = (canvas.width - (count - 1) * colSpacing) / 2;
+      for (let c = 0; c < count; c++) {
         pegs.push({ x: startX + c * colSpacing, y: startY + r * rowSpacing });
       }
     }
 
-    function applyTheme(theme) {
-      currentTheme = theme;
-      safeStorage.setItem('plinko_theme', theme);
-      if (theme === 'light') {
-        document.body.classList.add('light-theme');
-        themeDarkBtn.classList.remove('active');
-        themeLightBtn.classList.add('active');
-      } else {
-        document.body.classList.remove('light-theme');
-        themeLightBtn.classList.remove('active');
-        themeDarkBtn.classList.add('active');
-      }
+    // Массив шариков
+    const balls = [];
+
+    // Сохранение счета
+    function updateScore(delta) {
+      score += delta;
+      scoreEl.innerText = score;
+      localStorage.setItem('plinko_v2_score', score.toString());
     }
 
-    function checkGameOver() {
-      if (score < 10 && balls.length === 0) {
-        resetModal.style.display = 'flex';
-      }
-    }
-
-    function loadScore() {
-      var localSaved = safeStorage.getItem('plinko_score');
-      if (localSaved !== null) {
-        score = parseInt(localSaved, 10);
-        scoreEl.innerText = score;
-      }
-
-      try {
-        var tg = window.Telegram && window.Telegram.WebApp;
-        if (tg && tg.CloudStorage && typeof tg.CloudStorage.getItem === 'function') {
-          tg.CloudStorage.getItem('plinko_score', function(err, value) {
-            if (!err && value) {
-              score = parseInt(value, 10);
-              scoreEl.innerText = score;
-              safeStorage.setItem('plinko_score', score.toString());
-            }
-            checkGameOver();
-          });
-          return;
-        }
-      } catch (e) {}
-      checkGameOver();
-    }
-
-    function forceSaveCloud() {
-      try {
-        var tg = window.Telegram && window.Telegram.WebApp;
-        if (tg && tg.CloudStorage && typeof tg.CloudStorage.setItem === 'function') {
-          tg.CloudStorage.setItem('plinko_score', score.toString(), function(err) {});
-        }
-      } catch(e) {}
-    }
-
-    function saveScore() {
-      safeStorage.setItem('plinko_score', score.toString());
-      if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(forceSaveCloud, 500);
-    }
-
-    function sendFeedback() {
-      var text = feedbackText.value.trim();
-      if (!text) {
-        alert("Пожалуйста, введите текст сообщения.");
+    // Спавн шарика
+    function spawnBall(customX) {
+      if (score < 10) {
+        alert("Недостаточно очков! Нажмите 'Сброс'.");
         return;
       }
+      updateScore(-10);
 
-      var payload = { type: 'feedback', text: text };
+      const spawnX = customX !== undefined 
+        ? Math.max(BALL_RADIUS + 5, Math.min(canvas.width - BALL_RADIUS - 5, customX))
+        : canvas.width / 2 + (Math.random() - 0.5) * 10;
 
-      try {
-        var tg = window.Telegram && window.Telegram.WebApp;
-        if (tg && typeof tg.sendData === 'function') {
-          tg.sendData(JSON.stringify(payload));
-          feedbackModal.style.display = 'none';
-          feedbackText.value = '';
-          alert("Отзыв отправлен!");
-          return;
-        }
-      } catch (err) {}
-      alert("Отправка доступна при запуске с клавиатуры Telegram!");
+      balls.push({
+        x: spawnX,
+        y: 20,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: 0
+      });
     }
 
+    // Расчет индекса слота
     function getSlotIndex(x) {
-      var slotWidth = canvas.width / MULTIPLIERS.length;
-      var idx = Math.floor(x / slotWidth);
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      const idx = Math.floor(x / slotWidth);
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
     }
 
-    function showFloatingScore(x, y, points, color) {
-      var el = document.createElement('div');
-      el.className = 'floating-score';
-      el.innerText = '+' + points;
-      el.style.color = color;
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-      document.body.appendChild(el);
-
-      setTimeout(function() { el.remove(); }, 800);
-    }
-
+    // Обновление физики
     function update() {
-      for (var i = balls.length - 1; i >= 0; i--) {
-        var b = balls[i];
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
 
-        if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
-        if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
+        // Отскоки от стенок
+        if (b.x - BALL_RADIUS < 0) {
+          b.x = BALL_RADIUS;
+          b.vx *= -RESTITUTION;
+        }
+        if (b.x + BALL_RADIUS > canvas.width) {
+          b.x = canvas.width - BALL_RADIUS;
+          b.vx *= -RESTITUTION;
+        }
 
-        for (var j = 0; j < pegs.length; j++) {
-          var p = pegs[j];
-          var dx = b.x - p.x;
-          var dy = b.y - p.y;
-          var dist = Math.sqrt(dx * dx + dy * dy);
-          var minDist = BALL_RADIUS + PEG_RADIUS;
+        // Столкновение с колышками
+        for (let j = 0; j < pegs.length; j++) {
+          const p = pegs[j];
+          const dx = b.x - p.x;
+          const dy = b.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = BALL_RADIUS + PEG_RADIUS;
 
           if (dist < minDist) {
-            var angle = Math.atan2(dy, dx);
-            var overlap = minDist - dist;
+            const angle = Math.atan2(dy, dx);
+            const overlap = minDist - dist;
             b.x += Math.cos(angle) * overlap;
             b.y += Math.sin(angle) * overlap;
 
-            var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy) * RESTITUTION;
-            b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
+            const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy) * RESTITUTION;
+            b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.6;
             b.vy = Math.sin(angle) * speed;
           }
         }
 
+        // Попадание в нижнюю лузу
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
-          var slotIdx = getSlotIndex(b.x);
-          var mult = MULTIPLIERS[slotIdx];
-          var gained = 10 * mult;
-
-          score += gained;
-          scoreEl.innerText = score;
-          saveScore();
-
-          var rect = canvas.getBoundingClientRect();
-          var slotWidth = canvas.width / MULTIPLIERS.length;
-          var popupX = rect.left + (slotIdx + 0.5) * slotWidth;
-          var popupY = rect.top + (canvas.height - 40);
-
-          showFloatingScore(popupX, popupY, gained, COLORS[slotIdx]);
-
+          const slotIdx = getSlotIndex(b.x);
+          const mult = MULTIPLIERS[slotIdx];
+          updateScore(10 * mult);
           balls.splice(i, 1);
-          checkGameOver();
         }
       }
     }
 
+    // Отрисовка
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = currentTheme === 'light' ? '#333333' : '#ffffff';
-      for (var i = 0; i < pegs.length; i++) {
-        var p = pegs[i];
+      // 1. Отрисовка колышков
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < pegs.length; i++) {
+        const p = pegs[i];
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      var slotWidth = canvas.width / MULTIPLIERS.length;
-      for (var k = 0; k < MULTIPLIERS.length; k++) {
-        var m = MULTIPLIERS[k];
-        var x = k * slotWidth;
-        var y = canvas.height - 40;
+      // 2. Отрисовка мультипликаторов снизу
+      const slotWidth = canvas.width / MULTIPLIERS.length;
+      for (let k = 0; k < MULTIPLIERS.length; k++) {
+        const m = MULTIPLIERS[k];
+        const x = k * slotWidth;
+        const y = canvas.height - 40;
+
         ctx.fillStyle = COLORS[k];
         ctx.fillRect(x + 2, y, slotWidth - 4, 38);
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('x' + m, x + slotWidth / 2, y + 24);
       }
 
-      ctx.save();
-      ctx.fillStyle = '#fffb00';
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#fffb00';
-      for (var bIdx = 0; bIdx < balls.length; bIdx++) {
-        var b = balls[bIdx];
+      // 3. Отрисовка шариков
+      ctx.fillStyle = '#ffeb3b';
+      for (let i = 0; i < balls.length; i++) {
+        const b = balls[i];
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.restore();
     }
 
-    function renderFrame() {
+    // Основной игровой цикл
+    function gameLoop() {
       update();
       draw();
+      requestAnimationFrame(gameLoop);
     }
 
-    function loop() {
-      renderFrame();
-      requestAnimationFrame(loop);
-    }
+    // Слушатели событий
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      spawnBall(clickX);
+    });
 
-    themeDarkBtn.addEventListener('click', function() { applyTheme('dark'); });
-    themeLightBtn.addEventListener('click', function() { applyTheme('light'); });
+    document.getElementById('drop-btn').addEventListener('click', () => spawnBall());
+    
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      score = 100;
+      scoreEl.innerText = score;
+      localStorage.setItem('plinko_v2_score', '100');
+    });
 
-    menuTabBtn.addEventListener('click', function() { menuModal.style.display = 'flex'; });
-    closeMenu.addEventListener('click', function() { menuM
+    // Запуск цикла
+    gameLoop();
+  </script>
+</body>
+</html>
