@@ -312,7 +312,7 @@
 
   <button id="settings-btn" class="settings-btn" title="Настройки">⚙️</button>
   <button id="menu-tab-btn" class="menu-tab-btn">Меню</button>
-  <div class="app-version">v1.0.13</div>
+  <div class="app-version">v1.0.14</div>
 
   <div id="score-board">Счет: <span id="score">100</span></div>
   <canvas id="gameCanvas" width="360" height="520"></canvas>
@@ -391,7 +391,16 @@
   </div>
 
   <script>
-    // БЕЗОПАСНАЯ РАБОТА С ХРАНИЛИЩЕМ (Не падает, если Telegram блокирует localStorage)
+    // 0. ЭКРАННЫЙ УЛОВИТЕЛЬ ОШИБОК
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(255,0,0,0.95);color:#fff;padding:12px;font-size:12px;z-index:99999;word-break:break-all;font-family:monospace;';
+      errDiv.innerText = '⚠️ Ошибка JS (Стр ' + lineNo + '): ' + msg;
+      document.body.appendChild(errDiv);
+      return false;
+    };
+
+    // БЕЗОПАСНАЯ РАБОТА С ХРАНИЛИЩЕМ
     const safeStorage = {
       getItem: (key) => {
         try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -401,13 +410,16 @@
       }
     };
 
-    // 0. ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      try {
+    // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
+    let tg = null;
+    try {
+      if (window.Telegram && window.Telegram.WebApp) {
+        tg = window.Telegram.WebApp;
         if (tg.ready) tg.ready();
         if (tg.expand) tg.expand();
-      } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('Telegram WebApp init bypass:', e);
     }
 
     // 1. DOM ЭЛЕМЕНТЫ
@@ -472,17 +484,19 @@
 
     // 3. ФУНКЦИИ ИГРЫ
     const applyTheme = (theme) => {
-      currentTheme = theme;
-      safeStorage.setItem('plinko_theme', theme);
-      if (theme === 'light') {
-        document.body.classList.add('light-theme');
-        themeDarkBtn.classList.remove('active');
-        themeLightBtn.classList.add('active');
-      } else {
-        document.body.classList.remove('light-theme');
-        themeLightBtn.classList.remove('active');
-        themeDarkBtn.classList.add('active');
-      }
+      try {
+        currentTheme = theme;
+        safeStorage.setItem('plinko_theme', theme);
+        if (theme === 'light') {
+          document.body.classList.add('light-theme');
+          themeDarkBtn.classList.remove('active');
+          themeLightBtn.classList.add('active');
+        } else {
+          document.body.classList.remove('light-theme');
+          themeLightBtn.classList.remove('active');
+          themeDarkBtn.classList.add('active');
+        }
+      } catch(e) {}
     };
 
     const checkGameOver = () => {
@@ -498,8 +512,8 @@
         scoreEl.innerText = score;
       }
 
-      if (tg?.CloudStorage) {
-        try {
+      try {
+        if (tg && tg.CloudStorage && typeof tg.CloudStorage.getItem === 'function') {
           tg.CloudStorage.getItem('plinko_score', (err, value) => {
             if (!err && value) {
               score = parseInt(value, 10);
@@ -508,22 +522,20 @@
             }
             checkGameOver();
           });
-        } catch (e) {
-          checkGameOver();
+          return;
         }
-      } else {
-        checkGameOver();
+      } catch (e) {
+        console.warn('CloudStorage fail:', e);
       }
+      checkGameOver();
     };
 
     const forceSaveCloud = () => {
-      if (tg?.CloudStorage) {
-        try {
-          tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {
-            if (err) console.error('Ошибка сохранения:', err);
-          });
-        } catch(e) {}
-      }
+      try {
+        if (tg && tg.CloudStorage && typeof tg.CloudStorage.setItem === 'function') {
+          tg.CloudStorage.setItem('plinko_score', score.toString(), (err) => {});
+        }
+      } catch(e) {}
     };
 
     const saveScore = () => {
@@ -541,18 +553,19 @@
 
       const payload = { type: 'feedback', text };
 
-      if (tg && typeof tg.sendData === 'function') {
-        try {
+      try {
+        if (tg && typeof tg.sendData === 'function') {
           tg.sendData(JSON.stringify(payload));
           feedbackModal.style.display = 'none';
           feedbackText.value = '';
           alert("Отзыв отправлен!");
-        } catch (err) {
-          alert("Отправка доступна при запуске с клавиатуры Telegram!");
+          return;
         }
-      } else {
-        alert("Отправка работает внутри открытого Telegram WebApp!");
+      } catch (err) {
+        alert("Отправка доступна при запуске с клавиатуры Telegram!");
+        return;
       }
+      alert("Отправка работает внутри открытого Telegram WebApp!");
     };
 
     const getSlotIndex = (x) => {
@@ -668,17 +681,4 @@
     themeDarkBtn.addEventListener('click', () => applyTheme('dark'));
     themeLightBtn.addEventListener('click', () => applyTheme('light'));
 
-    menuTabBtn.addEventListener('click', () => { menuModal.style.display = 'flex'; });
-    closeMenu.addEventListener('click', () => { menuModal.style.display = 'none'; });
-
-    settingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
-    closeSettings.addEventListener('click', () => { settingsModal.style.display = 'none'; });
-
-    openFeedbackBtn.addEventListener('click', () => {
-      settingsModal.style.display = 'none';
-      feedbackModal.style.display = 'flex';
-    });
-    closeFeedback.addEventListener('click', () => { feedbackModal.style.display = 'none'; });
-    sendFeedbackBtn.addEventListener('click', sendFeedback);
-
-    openConfirmR
+    menuT
