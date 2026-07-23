@@ -93,18 +93,47 @@
 
     let score = 100;
 
+    // --- ФУНКЦИИ РАБОТЫ С СОХРАНЕНИЯМИ (Telegram Cloud Storage) ---
+    function loadScore() {
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.getItem('plinko_score', (err, value) => {
+          if (!err && value) {
+            score = parseInt(value, 10);
+            scoreEl.innerText = score;
+          }
+        });
+      } else {
+        // Запасной вариант через браузер (если запуск вне Telegram)
+        const saved = localStorage.getItem('plinko_score');
+        if (saved) {
+          score = parseInt(saved, 10);
+          scoreEl.innerText = score;
+        }
+      }
+    }
+
+    function saveScore() {
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.setItem('plinko_score', score.toString());
+      } else {
+        localStorage.setItem('plinko_score', score.toString());
+      }
+    }
+
+    // Загружаем сохранённый счёт при старте
+    loadScore();
+    // -------------------------------------------------------------
+
     // Настройки сетки и физики
     const ROWS = 7;
     const PEG_RADIUS = 4;
     const BALL_RADIUS = 7;
     const GRAVITY = 0.25;
-    const RESTITUTION = 0.5; // Прыгучесть
+    const RESTITUTION = 0.5;
 
-    // Обновленные ячейки снизу: по краям 0, затем 2, 3 и в центре 5
     const MULTIPLIERS = [0, 2, 3, 5, 3, 2, 0];
     const COLORS = ['#546e7a', '#ff9800', '#f44336', '#e91e63', '#f44336', '#ff9800', '#546e7a'];
 
-    // Генерация штырьков
     const pegs = [];
     const startY = 80;
     const rowSpacing = 45;
@@ -118,19 +147,18 @@
       }
     }
 
-    // Шарики в игре
     const balls = [];
 
-    // Сброс шарика
     canvas.addEventListener('pointerdown', (e) => {
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      // Спавним только в верхней трети
       if (clickY < 60 && score >= 10) {
         score -= 10;
         scoreEl.innerText = score;
+        saveScore(); // Сохраняем списывание очков
+
         balls.push({
           x: clickX,
           y: Math.max(20, clickY),
@@ -140,14 +168,12 @@
       }
     });
 
-    // Расчет попадания в ячейки
     function getSlotIndex(x) {
       const slotWidth = canvas.width / MULTIPLIERS.length;
       let idx = Math.floor(x / slotWidth);
       return Math.max(0, Math.min(MULTIPLIERS.length - 1, idx));
     }
 
-    // Функция создания всплывающего текста с очками
     function showFloatingScore(x, y, points, color) {
       const el = document.createElement('div');
       el.className = 'floating-score';
@@ -162,27 +188,22 @@
       }, 800);
     }
 
-    // Функция пульсации табло счёта
     function animateScoreDisplay() {
       scoreBoardEl.classList.remove('score-bump');
-      void scoreBoardEl.offsetWidth; // Быстрый сброс анимации
+      void scoreBoardEl.offsetWidth;
       scoreBoardEl.classList.add('score-bump');
     }
 
-    // Игровой цикл
     function update() {
-      // Обновление шариков
       for (let i = balls.length - 1; i >= 0; i--) {
         const b = balls[i];
         b.vy += GRAVITY;
         b.x += b.vx;
         b.y += b.vy;
 
-        // Ограничение по границам экрана
         if (b.x - BALL_RADIUS < 0) { b.x = BALL_RADIUS; b.vx *= -RESTITUTION; }
         if (b.x + BALL_RADIUS > canvas.width) { b.x = canvas.width - BALL_RADIUS; b.vx *= -RESTITUTION; }
 
-        // Столкновение со штырьками
         pegs.forEach(p => {
           const dx = b.x - p.x;
           const dy = b.y - p.y;
@@ -195,14 +216,12 @@
             b.x += Math.cos(angle) * overlap;
             b.y += Math.sin(angle) * overlap;
 
-            // Вычисление отскока
             const speed = Math.hypot(b.vx, b.vy) * RESTITUTION;
             b.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.5;
             b.vy = Math.sin(angle) * speed;
           }
         });
 
-        // Достижение дна
         if (b.y + BALL_RADIUS >= canvas.height - 40) {
           const slotIdx = getSlotIndex(b.x);
           const mult = MULTIPLIERS[slotIdx];
@@ -210,8 +229,8 @@
           
           score += gained;
           scoreEl.innerText = score;
+          saveScore(); // Сохраняем начисление очков
 
-          // Эффекты при забитии
           const rect = canvas.getBoundingClientRect();
           const slotWidth = canvas.width / MULTIPLIERS.length;
           const popupX = rect.left + (slotIdx + 0.5) * slotWidth;
@@ -228,7 +247,6 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Отрисовка штырьков
       ctx.fillStyle = '#ffffff';
       pegs.forEach(p => {
         ctx.beginPath();
@@ -236,7 +254,6 @@
         ctx.fill();
       });
 
-      // Отрисовка ячеек снизу
       const slotWidth = canvas.width / MULTIPLIERS.length;
       MULTIPLIERS.forEach((m, i) => {
         const x = i * slotWidth;
@@ -250,7 +267,6 @@
         ctx.fillText(`x${m}`, x + slotWidth / 2, y + 24);
       });
 
-      // Отрисовка шариков с неоновым свечением
       ctx.save();
       ctx.fillStyle = '#fffb00';
       ctx.shadowBlur = 15;
