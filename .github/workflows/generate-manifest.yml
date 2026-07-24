@@ -2,33 +2,28 @@ name: Generate Assets Manifest
 
 on:
   push:
-    paths:
-      - 'assets/**' # Срабатывает только если изменилось содержимое папки assets
-
-permissions:
-  contents: write # Даём право боту делать коммит обратно в репозиторий
+    branches:
+      - main  # Запуск при пуше в main
+  workflow_dispatch: # Позволяет запускать вручную из вкладки Actions
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Generate manifest.json
         run: |
-          cd assets
-          # Сканируем папку assets и формируем JSON массив из файлов .jpg и .png
-          ls -1 *.jpg *.png 2>/dev/null | jq -R . | jq -s . > manifest.json
-          echo "Сгенерирован manifest.json:"
-          cat manifest.json
+          cd assets || exit 1
+          # Собираем список всех изображений в JSON-массив
+          files=$(ls *.jpg *.png 2>/dev/null | jq -R . | jq -s .)
+          echo "$files" > manifest.json
 
-      - name: Commit and Push manifest
+      - name: Commit and push manifest
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/manifest.json
-          git status
-          # Пушим файл только если он реально изменился
-          git diff --staged --quiet || git commit -m "auto: update assets manifest.json" && git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-generate manifest.json" && git push)
+          
