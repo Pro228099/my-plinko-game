@@ -414,6 +414,22 @@
       color: #708499;
     }
 
+    .bg-card-badge {
+      position: absolute;
+      bottom: 6px;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #4caf50;
+      backdrop-filter: blur(2px);
+    }
+
+    .bg-card-badge.price {
+      color: #ffb700;
+    }
+
     .danger-zone {
       margin-top: 10px;
       padding: 12px;
@@ -434,19 +450,6 @@
       display: flex;
       gap: 10px;
       margin-top: 16px;
-    }
-
-    /* Пасхалка */
-    .easter-egg-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin: 15px 0 8px 0;
-      color: #ff4081;
-    }
-    .easter-egg-sub {
-      font-size: 12px;
-      color: #708499;
-      margin-bottom: 15px;
     }
   </style>
 </head>
@@ -472,7 +475,7 @@
 
   <!-- ВСПЛЫВАЮЩАЯ ПЛАШКА ОШИБКИ -->
   <div id="no-score-banner" class="banner-error">
-    У вас нет счёта, сбросьте в настройках
+    Недостаточно средств!
   </div>
 
   <!-- ИГРОВОЕ ПОЛЕ -->
@@ -524,16 +527,7 @@
     <div class="modal-box" style="border: 1px solid rgba(255,255,255,0.1); animation: none;">
       <button id="close-menu" class="close-btn">&times;</button>
       <div class="modal-title">☰ Меню</div>
-      <div id="coming-soon-text" style="font-size: 15px; color: #708499; margin: 25px 0; cursor: pointer; user-select: none;">Coming soon...</div>
-    </div>
-  </div>
-
-  <!-- Модальное окно Пасхалки -->
-  <div id="easter-egg-modal" class="modal-overlay">
-    <div class="modal-box">
-      <button id="close-easter-egg" class="close-btn">&times;</button>
-      <div class="easter-egg-title">люблю кефира❤️</div>
-      <div class="easter-egg-sub">-pro228099</div>
+      <div id="coming-soon-text" style="font-size: 15px; color: #708499; margin: 25px 0; user-select: none;">Coming soon...</div>
     </div>
   </div>
 
@@ -598,10 +592,6 @@
     const menuBtn = document.getElementById('menu-btn');
     const menuModal = document.getElementById('menu-modal');
     const closeMenu = document.getElementById('close-menu');
-    const comingSoonText = document.getElementById('coming-soon-text');
-
-    const easterEggModal = document.getElementById('easter-egg-modal');
-    const closeEasterEgg = document.getElementById('close-easter-egg');
 
     const openConfirmBtn = document.getElementById('open-confirm-btn');
     const confirmModal = document.getElementById('confirm-modal');
@@ -613,26 +603,44 @@
     let selectedBallColor = localStorage.getItem('plinko_ball_color') || '#ff0000';
     let activeSkinType = localStorage.getItem('plinko_skin_type') || 'normal';
     let activeBgName = localStorage.getItem('plinko_bg_name') || 'default';
+    
+    // Купленные фоны (дефолтный всегда куплен)
+    let unlockedBgs = JSON.parse(localStorage.getItem('plinko_unlocked_bgs') || '["default"]');
 
-    // Список всех доступных фонов
-    const bgList = ['default', '1953'];
-    for (let i = 1969; i <= 1981; i++) {
-      bgList.push(i.toString());
-    }
-
-    // Кэш загруженных картинок для Canvas
+    // Базовый список и кэш
+    let bgList = ['default'];
     const bgImagesCache = {};
-    bgList.forEach(name => {
-      if (name !== 'default') {
-        const img = new Image();
-        img.src = `assets/${name}.jpg`;
-        bgImagesCache[name] = img;
+
+    // Загрузка динамического списка из manifest.json (авто-хук)
+    async function loadBgManifest() {
+      try {
+        const res = await fetch('assets/manifest.json');
+        if (res.ok) {
+          const files = await res.json();
+          const dynamicBgs = files
+            .filter(f => f.endsWith('.jpg') || f.endsWith('.png'))
+            .map(f => f.replace(/\.(jpg|png)$/, ''));
+          
+          bgList = ['default', ...dynamicBgs];
+        }
+      } catch (e) {
+        console.log('Ошибочка при загрузке манифеста, используем встроенные', e);
       }
-    });
+
+      // Кэширование картинок
+      bgList.forEach(name => {
+        if (name !== 'default') {
+          const img = new Image();
+          img.src = `assets/${name}.jpg`;
+          bgImagesCache[name] = img;
+        }
+      });
+
+      renderBgGrid();
+    }
 
     let displayedScore = score;
     let bannerTimeout = null;
-    let comingSoonClicks = 0;
     let lastSpawnTime = 0;
 
     scoreEl.innerText = Math.round(displayedScore) + '$';
@@ -653,13 +661,15 @@
       tabBalls.classList.remove('active');
     });
 
-    // Отрисовка списка фонов в UI
+    // Отрисовка сетки фонов с учётом покупки по 1000$
     function renderBgGrid() {
       bgGrid.innerHTML = '';
       bgList.forEach(name => {
         const card = document.createElement('div');
         card.className = `bg-card ${activeBgName === name ? 'selected' : ''}`;
         
+        const isUnlocked = unlockedBgs.includes(name);
+
         if (name === 'default') {
           card.classList.add('bg-card-default');
           card.innerText = 'По умолчанию';
@@ -668,12 +678,31 @@
           img.src = `assets/${name}.jpg`;
           img.alt = `Фон ${name}`;
           card.appendChild(img);
+
+          const badge = document.createElement('div');
+          badge.className = `bg-card-badge ${isUnlocked ? '' : 'price'}`;
+          badge.innerText = isUnlocked ? 'Куплено' : '1000$';
+          card.appendChild(badge);
         }
 
         card.addEventListener('click', () => {
-          activeBgName = name;
-          localStorage.setItem('plinko_bg_name', name);
-          renderBgGrid();
+          if (isUnlocked) {
+            activeBgName = name;
+            localStorage.setItem('plinko_bg_name', name);
+            renderBgGrid();
+          } else {
+            // Покупка фона
+            if (score >= 1000) {
+              updateScore(-1000);
+              unlockedBgs.push(name);
+              localStorage.setItem('plinko_unlocked_bgs', JSON.stringify(unlockedBgs));
+              activeBgName = name;
+              localStorage.setItem('plinko_bg_name', name);
+              renderBgGrid();
+            } else {
+              showNoScoreBanner('Недостаточно денег (Нужно 1000$)');
+            }
+          }
         });
 
         bgGrid.appendChild(card);
@@ -755,7 +784,8 @@
     }
 
     // Показ плашки ошибки
-    function showNoScoreBanner() {
+    function showNoScoreBanner(msg) {
+      noScoreBanner.innerText = msg || 'У вас нет счёта, сбросьте в настройках';
       noScoreBanner.classList.add('show');
       if (bannerTimeout) clearTimeout(bannerTimeout);
       bannerTimeout = setTimeout(() => {
@@ -781,7 +811,7 @@
       if (now - lastSpawnTime < 100) return;
 
       if (score < 10) {
-        showNoScoreBanner();
+        showNoScoreBanner('У вас нет счёта, сбросьте в настройках');
         return;
       }
 
@@ -1069,21 +1099,7 @@
     closeSkins.addEventListener('click', () => skinsModal.style.display = 'none');
 
     menuBtn.addEventListener('click', () => menuModal.style.display = 'flex');
-    closeMenu.addEventListener('click', () => {
-      menuModal.style.display = 'none';
-      comingSoonClicks = 0;
-    });
-
-    comingSoonText.addEventListener('click', () => {
-      comingSoonClicks++;
-      if (comingSoonClicks >= 5) {
-        menuModal.style.display = 'none';
-        easterEggModal.style.display = 'flex';
-        comingSoonClicks = 0;
-      }
-    });
-
-    closeEasterEgg.addEventListener('click', () => easterEggModal.style.display = 'none');
+    closeMenu.addEventListener('click', () => menuModal.style.display = 'none');
 
     openConfirmBtn.addEventListener('click', () => confirmModal.style.display = 'flex');
     confirmNo.addEventListener('click', () => confirmModal.style.display = 'none');
@@ -1094,9 +1110,10 @@
       settingsModal.style.display = 'none';
     });
 
+    // Запуск
+    loadBgManifest();
     updateSkinsUI();
     gameLoop();
   </script>
 </body>
 </html>
-
